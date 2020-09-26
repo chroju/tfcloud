@@ -1,0 +1,32 @@
+package commands
+
+import (
+	"strings"
+
+	"github.com/mitchellh/cli"
+)
+
+type RunCommand struct {
+	UI cli.Ui
+}
+
+func (c *RunCommand) Run(args []string) int {
+	c.UI.Output(strings.TrimSpace(helpRun))
+	return 2
+}
+
+func (c *RunCommand) Help() string {
+	return strings.TrimSpace(helpRun)
+}
+
+func (c *RunCommand) Synopsis() string {
+	return "about terraform runnings"
+}
+
+const helpRun = `
+Usage: tfcloud run <subcommand>
+
+SubCommands:
+	list    List all current runs
+	apply   Apply terraform run needs confirmation
+`
