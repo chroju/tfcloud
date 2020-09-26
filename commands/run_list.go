@@ -1,9 +1,9 @@
 package commands
 
 import (
-	"encoding/json"
 	"strings"
 
+	"github.com/chroju/tfcloud/tfc"
 	"github.com/mitchellh/cli"
 )
 
@@ -14,21 +14,19 @@ type RunListCommand struct {
 func (c *RunListCommand) Run(args []string) int {
 	address := args[0]
 	token := args[1]
-	workspace := args[2]
-	tfc, err := NewTfCloud(address, token)
+	organization := args[2]
+	client, err := tfc.NewTfCloud(address, token)
 	if err != nil {
 		c.UI.Error("Terraform Cloud token is not valid.")
 		return 1
 	}
 
-	list, err := tfc.Client.Runs.List(tfc.ctx, workspace, nil)
+	result, err := client.RunList(organization)
 	if err != nil {
-		c.UI.Error("Error")
+		c.UI.Error(err.Error())
 		return 1
 	}
-	for _, run := range list {
-		c.UI.Output(json.Marshal(run))
-	}
+	c.UI.Output(string(result))
 	return 0
 }
 
