@@ -106,7 +106,6 @@ func checkRunInAction(run *tfe.Run) bool {
 		run.Status == tfe.RunCanceled ||
 		run.Status == tfe.RunErrored ||
 		run.Status == tfe.RunDiscarded ||
-		run.Status == tfe.RunPlanned ||
 		run.Status == tfe.RunPlannedAndFinished ||
 		run.Status == "" {
 		return false
