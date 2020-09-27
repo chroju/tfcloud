@@ -3,7 +3,6 @@ package tfc
 import (
 	"context"
 	"encoding/json"
-	"sync"
 
 	tfe "github.com/hashicorp/go-tfe"
 )
@@ -43,7 +42,7 @@ func NewTfCloud(address, token string) (TfCloud, error) {
 }
 
 func (c *tfclient) RunList(organization string) ([]byte, error) {
-	type Result struct {
+	type result struct {
 		Error    error
 		Response []byte
 	}
@@ -57,32 +56,24 @@ func (c *tfclient) RunList(organization string) ([]byte, error) {
 		return nil, err
 	}
 
-	resultChan := make(chan Result)
-	var wg sync.WaitGroup
+	resultChan := make(chan result)
 	for _, ws := range wslist.Items {
-		wg.Add(1)
 		go func(ws *tfe.Workspace) {
 			runs, err := c.RunGet(ws.ID)
-			resultChan <- Result{Error: err, Response: runs}
-			wg.Done()
+			resultChan <- result{Error: err, Response: runs}
 		}(ws)
 	}
 
-	var result []byte
+	var rtn []byte
 	for range wslist.Items {
 		run := <-resultChan
 		if run.Error != nil {
 			return nil, err
 		}
-		result = append(result, run.Response...)
+		rtn = append(rtn, run.Response...)
 	}
 
-	go func() {
-		wg.Wait()
-		close(resultChan)
-	}()
-
-	return result, nil
+	return rtn, nil
 }
 
 func (c *tfclient) RunGet(workspaceID string) ([]byte, error) {
