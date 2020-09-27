@@ -2,7 +2,7 @@ package tfc
 
 import (
 	"context"
-	"encoding/json"
+	"time"
 
 	tfe "github.com/hashicorp/go-tfe"
 )
@@ -17,10 +17,19 @@ type tfclient struct {
 	ctx    context.Context
 }
 
+type Run struct {
+	ID            string
+	Organization  string
+	Workspace     string
+	Status        string
+	IsConfirmable bool
+	CreatedAt     time.Time
+}
+
 // Client represents Terraform Cloud API client
 type TfCloud interface {
-	RunList(organization string) ([]byte, error)
-	RunGet(workspaceID string) ([]byte, error)
+	RunList(organization string) ([]*Run, error)
+	RunGet(workspaceID, WorkspaceName string) (*Run, error)
 }
 
 // NewTfCloud creates a new TfCloud interface
@@ -41,10 +50,10 @@ func NewTfCloud(address, token string) (TfCloud, error) {
 	}, nil
 }
 
-func (c *tfclient) RunList(organization string) ([]byte, error) {
+func (c *tfclient) RunList(organization string) ([]*Run, error) {
 	type result struct {
 		Error    error
-		Response []byte
+		Response *Run
 	}
 	wlo := &tfe.WorkspaceListOptions{
 		ListOptions: *ListOptions,
@@ -59,24 +68,26 @@ func (c *tfclient) RunList(organization string) ([]byte, error) {
 	resultChan := make(chan result)
 	for _, ws := range wslist.Items {
 		go func(ws *tfe.Workspace) {
-			runs, err := c.RunGet(ws.ID)
-			resultChan <- result{Error: err, Response: runs}
+			run, err := c.RunGet(ws.ID, ws.Name)
+			resultChan <- result{Error: err, Response: run}
 		}(ws)
 	}
 
-	var rtn []byte
+	var rtn []*Run
 	for range wslist.Items {
 		run := <-resultChan
 		if run.Error != nil {
 			return nil, err
 		}
-		rtn = append(rtn, run.Response...)
+		if run.Response != nil {
+			rtn = append(rtn, run.Response)
+		}
 	}
 
 	return rtn, nil
 }
 
-func (c *tfclient) RunGet(workspaceID string) ([]byte, error) {
+func (c *tfclient) RunGet(workspaceID, WorkspaceName string) (*Run, error) {
 	rlo := &tfe.RunListOptions{
 		ListOptions: *ListOptions,
 	}
@@ -86,29 +97,31 @@ func (c *tfclient) RunGet(workspaceID string) ([]byte, error) {
 		return nil, err
 	}
 
-	var result []byte
 	for _, run := range runlist.Items {
-		if !checkRunInAction(run) {
+		if checkRunCompleted(run) {
 			continue
 		}
-		runJSON, err := json.Marshal(run)
-		if err != nil {
-			return nil, err
-		}
-		result = append(result, runJSON...)
+		return &Run{
+			ID:            run.ID,
+			Status:        string(run.Status),
+			Workspace:     WorkspaceName,
+			CreatedAt:     run.CreatedAt,
+			IsConfirmable: run.Actions.IsConfirmable,
+		}, nil
 	}
 
-	return result, nil
+	return nil, nil
 }
 
-func checkRunInAction(run *tfe.Run) bool {
+func checkRunCompleted(run *tfe.Run) bool {
 	if run.Status == tfe.RunApplied ||
 		run.Status == tfe.RunCanceled ||
 		run.Status == tfe.RunErrored ||
 		run.Status == tfe.RunDiscarded ||
+		run.Status == tfe.RunPolicySoftFailed ||
 		run.Status == tfe.RunPlannedAndFinished ||
 		run.Status == "" {
-		return false
+		return true
 	}
-	return true
+	return false
 }
