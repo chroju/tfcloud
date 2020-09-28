@@ -1,7 +1,10 @@
 package commands
 
 import (
+	"bytes"
+	"fmt"
 	"strings"
+	"text/tabwriter"
 
 	"github.com/chroju/tfcloud/tfc"
 	"github.com/mitchellh/cli"
@@ -26,7 +29,15 @@ func (c *RunListCommand) Run(args []string) int {
 		c.UI.Error(err.Error())
 		return 1
 	}
-	c.UI.Output(string(result))
+
+	out := new(bytes.Buffer)
+	w := tabwriter.NewWriter(out, 0, 4, 1, ' ', 0)
+	fmt.Fprintln(w, "WORKSPACE\tSTATUS\tNEEDS CONFIRM\tLINK")
+	for _, r := range result {
+		fmt.Fprintf(w, "%s\t%s\t%v\thttps://%s/app/%s/workspaces/%s/runs/%s\n", r.Workspace, r.Status, r.IsConfirmable, address, organization, r.Workspace, r.ID)
+	}
+	w.Flush()
+	c.UI.Output(out.String())
 	return 0
 }
 
