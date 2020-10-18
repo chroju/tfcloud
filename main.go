@@ -41,6 +41,9 @@ func main() {
 		"run list": func() (cli.Command, error) {
 			return &commands.RunListCommand{UI: &cli.ColoredUi{Ui: ui, WarnColor: cli.UiColorYellow, ErrorColor: cli.UiColorRed}}, nil
 		},
+		"run apply": func() (cli.Command, error) {
+			return &commands.RunApplyCommand{UI: &cli.ColoredUi{Ui: ui, WarnColor: cli.UiColorYellow, ErrorColor: cli.UiColorRed}}, nil
+		},
 	}
 
 	exitStatus, err := c.Run()

@@ -15,9 +15,14 @@ type RunListCommand struct {
 }
 
 func (c *RunListCommand) Run(args []string) int {
+	if len(args) != 3 {
+		c.UI.Error("Arguments is not valid.")
+		c.UI.Info(c.Help())
+		return 1
+	}
 	organization := args[0]
-	address := args[1]
-	token := args[2]
+	address := args[len(args)-2]
+	token := args[len(args)-1]
 	client, err := tfc.NewTfCloud(address, token)
 	if err != nil {
 		c.UI.Error("Terraform Cloud token is not valid.")
@@ -46,13 +51,9 @@ func (c *RunListCommand) Help() string {
 }
 
 func (c *RunListCommand) Synopsis() string {
-	return "about terraform runnings"
+	return "List all current terraform runs"
 }
 
 const helpRunList = `
-Usage: tfcloud run <subcommand>
-
-SubCommands:
-	list    List all current runs
-	apply   Apply terraform run needs confirmation
+Usage: tfcloud run list <organization>
 `

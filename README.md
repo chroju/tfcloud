@@ -11,12 +11,10 @@ This is a command line tool that I am creating for personal use. So, I do not pl
 Commands
 --------
 
-# run
+# runs
 
 ```
-$ tfc run list
-$ tfc run apply RUN_ID
-$ tfc run discard RUN_ID
+$ tfc runs
 ```
 
 # workspace
@@ -31,12 +29,13 @@ $ tfc workspace update
 
 ```
 $ tfc module list
+$ tfc module describe
 ```
 
 LICENSE
 -------
 
-MIT
+[MIT](https://github.com/chroju/tfcloud/blob/main/LICENSE)
 
 Author
 ------
