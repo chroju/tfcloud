@@ -15,9 +15,9 @@ type RunListCommand struct {
 }
 
 func (c *RunListCommand) Run(args []string) int {
-	address := args[0]
-	token := args[1]
-	organization := args[2]
+	organization := args[0]
+	address := args[1]
+	token := args[2]
 	client, err := tfc.NewTfCloud(address, token)
 	if err != nil {
 		c.UI.Error("Terraform Cloud token is not valid.")
