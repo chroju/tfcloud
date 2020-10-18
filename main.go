@@ -16,12 +16,23 @@ const (
 
 func main() {
 	c := cli.NewCLI(app, version)
-	c.Args = os.Args[1:]
 	ui := &cli.BasicUi{
 		Reader:      os.Stdin,
 		Writer:      os.Stdout,
 		ErrorWriter: os.Stderr,
 	}
+
+	var terraformrcPath string
+	if terraformrcPath = os.Getenv("TF_CLI_CONFIG_FILE"); terraformrcPath == "" {
+		terraformrcPath = os.Getenv("HOME") + "/.terraformrc"
+	}
+	token, err := commands.ParseTerraformrc(terraformrcPath)
+	if err != nil {
+		ui.Error(fmt.Sprintf("Error: %s", err))
+	}
+
+	commonArgs := []string{tfcEndpoint, token}
+	c.Args = append(os.Args[1:], commonArgs...)
 
 	c.Commands = map[string]cli.CommandFactory{
 		"run": func() (cli.Command, error) {
