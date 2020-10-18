@@ -9,7 +9,7 @@ import (
 
 var ListOptions = &tfe.ListOptions{
 	PageNumber: 0,
-	PageSize:   100,
+	PageSize:   1,
 }
 
 type tfclient struct {
@@ -30,6 +30,7 @@ type Run struct {
 type TfCloud interface {
 	RunList(organization string) ([]*Run, error)
 	RunGet(workspaceID, WorkspaceName string) (*Run, error)
+	RunApply(RunID string) error
 }
 
 // NewTfCloud creates a new TfCloud interface
@@ -111,6 +112,18 @@ func (c *tfclient) RunGet(workspaceID, WorkspaceName string) (*Run, error) {
 	}
 
 	return nil, nil
+}
+
+func (c *tfclient) RunApply(runID string) error {
+	rao := &tfe.RunApplyOptions{
+		Comment: tfe.String("Apply via tfcloud"),
+	}
+
+	if err := c.client.Runs.Apply(c.ctx, runID, *rao); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func checkRunCompleted(run *tfe.Run) bool {

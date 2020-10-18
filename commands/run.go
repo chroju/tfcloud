@@ -27,6 +27,6 @@ const helpRun = `
 Usage: tfcloud run <subcommand>
 
 SubCommands:
-	list    List all current runs
-	apply   Apply terraform run needs confirmation
+	list    List all current terraform runs
+	apply   Apply terraform run which needs a confirmation
 `
