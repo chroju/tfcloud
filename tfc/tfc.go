@@ -9,7 +9,7 @@ import (
 
 var ListOptions = &tfe.ListOptions{
 	PageNumber: 0,
-	PageSize:   1,
+	PageSize:   100,
 }
 
 type tfclient struct {
@@ -26,11 +26,19 @@ type Run struct {
 	CreatedAt     time.Time
 }
 
+type Workspace struct {
+	ID               string
+	Name             string
+	TerraformVersion string
+	CurrentRun       *tfe.Run
+}
+
 // Client represents Terraform Cloud API client
 type TfCloud interface {
 	RunList(organization string) ([]*Run, error)
 	RunGet(workspaceID, WorkspaceName string) (*Run, error)
 	RunApply(RunID string) error
+	WorkspaceList(organization string) ([]*Workspace, error)
 }
 
 // NewTfCloud creates a new TfCloud interface
@@ -124,6 +132,29 @@ func (c *tfclient) RunApply(runID string) error {
 	}
 
 	return nil
+}
+
+func (c *tfclient) WorkspaceList(organization string) ([]*Workspace, error) {
+	wlo := &tfe.WorkspaceListOptions{
+		ListOptions: *ListOptions,
+		Search:      nil,
+	}
+
+	wslist, err := c.client.Workspaces.List(c.ctx, organization, *wlo)
+	if err != nil {
+		return nil, err
+	}
+
+	result := make([]*Workspace, len(wslist.Items))
+	for i, v := range wslist.Items {
+		result[i] = &Workspace{
+			ID:               v.ID,
+			Name:             v.Name,
+			TerraformVersion: v.TerraformVersion,
+		}
+	}
+
+	return result, nil
 }
 
 func checkRunCompleted(run *tfe.Run) bool {
