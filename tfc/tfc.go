@@ -13,8 +13,9 @@ var ListOptions = &tfe.ListOptions{
 }
 
 type tfclient struct {
-	client *tfe.Client
-	ctx    context.Context
+	client         *tfe.Client
+	registryClient *RegistryClient
+	ctx            context.Context
 }
 
 type Run struct {
@@ -33,12 +34,25 @@ type Workspace struct {
 	CurrentRun       *tfe.Run
 }
 
+type RegistryModule struct {
+	ID              string
+	Name            string
+	Provider        string
+	VersionStatuses []RegistryModuleVersionStatuses
+	Organization    string
+}
+
+type RegistryModuleVersionStatuses struct {
+	Version string
+}
+
 // Client represents Terraform Cloud API client
 type TfCloud interface {
 	RunList(organization string) ([]*Run, error)
 	RunGet(workspaceID, WorkspaceName string) (*Run, error)
 	RunApply(RunID string) error
 	WorkspaceList(organization string) ([]*Workspace, error)
+	ModuleList() ([]*RegistryModule, error)
 }
 
 // NewTfCloud creates a new TfCloud interface
@@ -46,8 +60,12 @@ func NewTfCloud(address, token string) (TfCloud, error) {
 	config := &tfe.Config{
 		Token: token,
 	}
-
 	client, err := tfe.NewClient(config)
+	if err != nil {
+		return nil, err
+	}
+
+	registryClient, err := NewRegistryClient(config)
 	if err != nil {
 		return nil, err
 	}
@@ -55,6 +73,7 @@ func NewTfCloud(address, token string) (TfCloud, error) {
 	ctx := context.Background()
 	return &tfclient{
 		client,
+		registryClient,
 		ctx,
 	}, nil
 }
@@ -151,6 +170,34 @@ func (c *tfclient) WorkspaceList(organization string) ([]*Workspace, error) {
 			ID:               v.ID,
 			Name:             v.Name,
 			TerraformVersion: v.TerraformVersion,
+		}
+	}
+
+	return result, nil
+}
+
+func (c *tfclient) ModuleList() ([]*RegistryModule, error) {
+	mlo := &RegistryModuleListOptions{
+		Limit: 100,
+	}
+
+	modulelist, err := c.registryClient.RegistryModules.List(c.ctx, *mlo)
+	if err != nil {
+		return nil, err
+	}
+
+	result := make([]*RegistryModule, len(modulelist.Items))
+	for i, v := range modulelist.Items {
+		result[i] = &RegistryModule{
+			ID:   v.ID,
+			Name: v.Name,
+			VersionStatuses: []RegistryModuleVersionStatuses{
+				{
+					Version: v.VersionStatuses[0].Version,
+				},
+			},
+			Provider:     v.Provider,
+			Organization: v.Organization.Name,
 		}
 	}
 
