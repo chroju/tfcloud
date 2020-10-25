@@ -29,7 +29,7 @@ $ tfc workspace update
 
 ```
 $ tfc module list
-$ tfc module describe
+$ tfc module show
 ```
 
 LICENSE
