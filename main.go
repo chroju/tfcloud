@@ -9,9 +9,8 @@ import (
 )
 
 const (
-	app         = "tfcloud"
-	version     = "0.0.1"
-	tfcEndpoint = "app.terraform.io"
+	app     = "tfcloud"
+	version = "0.0.1"
 )
 
 func main() {
@@ -26,12 +25,13 @@ func main() {
 	if terraformrcPath = os.Getenv("TF_CLI_CONFIG_FILE"); terraformrcPath == "" {
 		terraformrcPath = os.Getenv("HOME") + "/.terraformrc"
 	}
-	token, err := commands.ParseTerraformrc(terraformrcPath)
+	credential, err := commands.ParseTerraformrc(terraformrcPath)
 	if err != nil {
 		ui.Error(fmt.Sprintf("Error: %s", err))
 	}
 
-	commonArgs := []string{tfcEndpoint, token}
+	// c.Args[0] is Terraform cloud endpoint, [1] is API token, [2:] are command line arguments.
+	commonArgs := []string{credential.Name, credential.Token}
 	c.Args = append(os.Args[1:], commonArgs...)
 
 	c.Commands = map[string]cli.CommandFactory{
