@@ -47,6 +47,9 @@ func main() {
 		"workspace list": func() (cli.Command, error) {
 			return &commands.WorkspaceListCommand{UI: &cli.ColoredUi{Ui: ui, WarnColor: cli.UiColorYellow, ErrorColor: cli.UiColorRed}}, nil
 		},
+		"module": func() (cli.Command, error) {
+			return &commands.ModuleCommand{UI: &cli.ColoredUi{Ui: ui, WarnColor: cli.UiColorYellow, ErrorColor: cli.UiColorRed}}, nil
+		},
 		"module list": func() (cli.Command, error) {
 			return &commands.ModuleListCommand{UI: &cli.ColoredUi{Ui: ui, WarnColor: cli.UiColorYellow, ErrorColor: cli.UiColorRed}}, nil
 		},
