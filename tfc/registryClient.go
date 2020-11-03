@@ -528,7 +528,6 @@ func checkResponseCode(r *http.Response) error {
 }
 
 func (s *registryModules) List(ctx context.Context, options RegistryModuleListOptions) (*RegistryModuleList, error) {
-	fmt.Println(s.client.baseURL.Path)
 	req, err := s.client.newRequest("GET", "modules", &options)
 	if err != nil {
 		return nil, err

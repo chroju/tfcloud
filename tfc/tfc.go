@@ -38,8 +38,9 @@ type RegistryModule struct {
 	ID              string
 	Name            string
 	Provider        string
-	VersionStatuses []RegistryModuleVersionStatuses
+	VersionStatuses []tfe.RegistryModuleVersionStatuses
 	Organization    string
+	VCSRepo         string
 }
 
 type RegistryModuleVersionStatuses struct {
@@ -53,6 +54,7 @@ type TfCloud interface {
 	RunApply(RunID string) error
 	WorkspaceList(organization string) ([]*Workspace, error)
 	ModuleList() ([]*RegistryModule, error)
+	ModuleVersions(organization, name, provider string) (*RegistryModule, error)
 }
 
 // NewTfCloud creates a new TfCloud interface
@@ -191,7 +193,7 @@ func (c *tfclient) ModuleList() ([]*RegistryModule, error) {
 		result[i] = &RegistryModule{
 			ID:   v.ID,
 			Name: v.Name,
-			VersionStatuses: []RegistryModuleVersionStatuses{
+			VersionStatuses: []tfe.RegistryModuleVersionStatuses{
 				{
 					Version: v.VersionStatuses[0].Version,
 				},
@@ -202,6 +204,22 @@ func (c *tfclient) ModuleList() ([]*RegistryModule, error) {
 	}
 
 	return result, nil
+}
+
+func (c *tfclient) ModuleVersions(organization, name, provider string) (*RegistryModule, error) {
+	module, err := c.client.RegistryModules.Read(c.ctx, organization, name, provider)
+	if err != nil {
+		return nil, err
+	}
+
+	return &RegistryModule{
+		ID:              module.ID,
+		Name:            module.Name,
+		Provider:        module.Provider,
+		VersionStatuses: module.VersionStatuses,
+		Organization:    module.Organization.Name,
+		VCSRepo:         module.VCSRepo.Identifier,
+	}, nil
 }
 
 func checkRunCompleted(run *tfe.Run) bool {
