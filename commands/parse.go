@@ -8,7 +8,7 @@ import (
 )
 
 type terraformrc struct {
-	Credentials []credential `hcl:"credentials,block"`
+	Credentials []*credential `hcl:"credentials,block"`
 }
 
 type credential struct {
@@ -16,18 +16,18 @@ type credential struct {
 	Token string `hcl:"token"`
 }
 
-func ParseTerraformrc(path string) (string, error) {
+func ParseTerraformrc(path string) (*credential, error) {
 	parser := hclparse.NewParser()
 	f, diags := parser.ParseHCLFile(path)
 	if diags.HasErrors() {
-		return "", fmt.Errorf("Parse %s failed", path)
+		return nil, fmt.Errorf("Parse %s failed", path)
 	}
 
 	var tfrc terraformrc
 	diags = gohcl.DecodeBody(f.Body, nil, &tfrc)
 	if diags.HasErrors() {
-		return "", fmt.Errorf("Decode %s failed", path)
+		return nil, fmt.Errorf("Decode %s failed", path)
 	}
 
-	return tfrc.Credentials[0].Token, nil
+	return tfrc.Credentials[0], nil
 }

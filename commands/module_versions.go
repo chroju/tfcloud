@@ -1,7 +1,10 @@
 package commands
 
 import (
+	"bytes"
+	"fmt"
 	"strings"
+	"text/tabwriter"
 
 	"github.com/chroju/tfcloud/tfc"
 	"github.com/mitchellh/cli"
@@ -30,11 +33,14 @@ func (c *ModuleVersionsCommand) Run(args []string) int {
 		return 1
 	}
 
-	var out string
+	out := new(bytes.Buffer)
+	w := tabwriter.NewWriter(out, 0, 4, 1, ' ', 0)
+	fmt.Fprintln(w, "VERSION\tSTATUS\tLINK")
 	for _, v := range result.VersionStatuses {
-		out = out + v.Version + "\n"
+		fmt.Fprintf(w, "%s\t%s\thttps://%s/app/%s/modules/view/%s/%s/%s\n", v.Version, v.Status, address, organization, name, provider, v.Version)
 	}
-	c.UI.Output(out)
+	w.Flush()
+	c.UI.Output(out.String())
 	return 0
 }
 
