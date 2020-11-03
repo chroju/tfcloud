@@ -50,8 +50,8 @@ func main() {
 		"module list": func() (cli.Command, error) {
 			return &commands.ModuleListCommand{UI: &cli.ColoredUi{Ui: ui, WarnColor: cli.UiColorYellow, ErrorColor: cli.UiColorRed}}, nil
 		},
-		"module show": func() (cli.Command, error) {
-			return &commands.ModuleShowCommand{UI: &cli.ColoredUi{Ui: ui, WarnColor: cli.UiColorYellow, ErrorColor: cli.UiColorRed}}, nil
+		"module versions": func() (cli.Command, error) {
+			return &commands.ModuleVersionsCommand{UI: &cli.ColoredUi{Ui: ui, WarnColor: cli.UiColorYellow, ErrorColor: cli.UiColorRed}}, nil
 		},
 	}
 

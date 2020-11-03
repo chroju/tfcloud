@@ -54,7 +54,7 @@ type TfCloud interface {
 	RunApply(RunID string) error
 	WorkspaceList(organization string) ([]*Workspace, error)
 	ModuleList() ([]*RegistryModule, error)
-	ModuleShow(organization, name, provider string) (*RegistryModule, error)
+	ModuleVersions(organization, name, provider string) (*RegistryModule, error)
 }
 
 // NewTfCloud creates a new TfCloud interface
@@ -206,7 +206,7 @@ func (c *tfclient) ModuleList() ([]*RegistryModule, error) {
 	return result, nil
 }
 
-func (c *tfclient) ModuleShow(organization, name, provider string) (*RegistryModule, error) {
+func (c *tfclient) ModuleVersions(organization, name, provider string) (*RegistryModule, error) {
 	module, err := c.client.RegistryModules.Read(c.ctx, organization, name, provider)
 	if err != nil {
 		return nil, err

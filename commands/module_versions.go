@@ -7,11 +7,11 @@ import (
 	"github.com/mitchellh/cli"
 )
 
-type ModuleShowCommand struct {
+type ModuleVersionsCommand struct {
 	UI cli.Ui
 }
 
-func (c *ModuleShowCommand) Run(args []string) int {
+func (c *ModuleVersionsCommand) Run(args []string) int {
 	organization := args[0]
 	provider := args[1]
 	name := args[2]
@@ -24,7 +24,7 @@ func (c *ModuleShowCommand) Run(args []string) int {
 		return 1
 	}
 
-	result, err := client.ModuleShow(organization, name, provider)
+	result, err := client.ModuleVersions(organization, name, provider)
 	if err != nil {
 		c.UI.Error(err.Error())
 		return 1
@@ -38,14 +38,14 @@ func (c *ModuleShowCommand) Run(args []string) int {
 	return 0
 }
 
-func (c *ModuleShowCommand) Help() string {
+func (c *ModuleVersionsCommand) Help() string {
 	return strings.TrimSpace(helpWorkspaceList)
 }
 
-func (c *ModuleShowCommand) Synopsis() string {
-	return "Show terraform cloud private module details"
+func (c *ModuleVersionsCommand) Synopsis() string {
+	return "Show terraform cloud private module all versions"
 }
 
-const helpModuleShow = `
-Usage: tfcloud module show <organization> <provider> <module name>
+const helpModuleVersions = `
+Usage: tfcloud module versions <organization> <provider> <module name>
 `
