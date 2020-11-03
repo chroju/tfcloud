@@ -1,27 +1,32 @@
 WIP: tfcloud
 =======
 
-`tfcloud` is a partial [Terraform Cloud]() CLI tool.
+`tfcloud` is a partial [Terraform Cloud](https://www.terraform.io/docs/cloud/index.html) CLI tool.
 
 Notes
 -----
 
-This is a command line tool that I am creating for personal use. So, I do not plan to implement it for all Terraform Cloud API.
+This is a command line tool that created for the personal use. So, this tool will not be compatible with all Terraform Cloud API.
+
+Set up
+------
+
+`tfcloud` requires a Terraform Cloud token. This corresponds to the description on the [CLI Configuration - Terraform by HashiCorp](https://www.terraform.io/docs/commands/cli-config.html#credentials-1) (like `$HOME/.terraformrc`, `TF_CLI_CONFIG_FILE` environment variable).
 
 Commands
 --------
 
-# runs
+# run
 
 ```
-$ tfc runs
+$ tfc run list <organization>
 ```
 
 # workspace
 
 ```
 $ tfc workspace create
-$ tfc workspace list
+$ tfc workspace list <organization>
 $ tfc workspace update
 ```
 
@@ -29,7 +34,7 @@ $ tfc workspace update
 
 ```
 $ tfc module list
-$ tfc module show
+$ tfc module versions <module>
 ```
 
 LICENSE
