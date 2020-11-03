@@ -1,4 +1,4 @@
-WIP: tfcloud
+tfcloud
 =======
 
 `tfcloud` is a partial [Terraform Cloud](https://www.terraform.io/docs/cloud/index.html) CLI tool.
@@ -16,25 +16,28 @@ Set up
 Commands
 --------
 
-# run
+### run
 
 ```
-$ tfc run list <organization>
+$ tfcloud run list <organization>
 ```
 
-# workspace
+### workspace
 
 ```
-$ tfc workspace create
-$ tfc workspace list <organization>
-$ tfc workspace update
+$ tfcloud workspace list <organization>
+
+## WIP: The following commands are not yet implemented
+
+$ tfcloud workspace create
+$ tfcloud workspace update
 ```
 
-# module
+### module
 
 ```
-$ tfc module list
-$ tfc module versions <module>
+$ tfcloud module list
+$ tfcloud module versions <module>
 ```
 
 LICENSE
