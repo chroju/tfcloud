@@ -50,7 +50,7 @@ type RegistryModuleVersionStatuses struct {
 // Client represents Terraform Cloud API client
 type TfCloud interface {
 	RunList(organization string) ([]*Run, error)
-	RunGet(workspaceID, WorkspaceName string) (*Run, error)
+	RunGet(workspaceName, runID string) (*Run, error)
 	RunApply(RunID string) error
 	WorkspaceList(organization string) ([]*Workspace, error)
 	ModuleList() ([]*RegistryModule, error)
@@ -98,8 +98,12 @@ func (c *tfclient) RunList(organization string) ([]*Run, error) {
 	resultChan := make(chan result)
 	for _, ws := range wslist.Items {
 		go func(ws *tfe.Workspace) {
-			run, err := c.RunGet(ws.ID, ws.Name)
-			resultChan <- result{Error: err, Response: run}
+			if ws.CurrentRun == nil {
+				resultChan <- result{Error: nil, Response: nil}
+			} else {
+				run, err := c.RunGet(ws.Name, ws.CurrentRun.ID)
+				resultChan <- result{Error: err, Response: run}
+			}
 		}(ws)
 	}
 
@@ -117,30 +121,22 @@ func (c *tfclient) RunList(organization string) ([]*Run, error) {
 	return rtn, nil
 }
 
-func (c *tfclient) RunGet(workspaceID, WorkspaceName string) (*Run, error) {
-	rlo := &tfe.RunListOptions{
-		ListOptions: *ListOptions,
-	}
-
-	runlist, err := c.client.Runs.List(c.ctx, workspaceID, *rlo)
+func (c *tfclient) RunGet(workspaceName, runID string) (*Run, error) {
+	run, err := c.client.Runs.Read(c.ctx, runID)
 	if err != nil {
 		return nil, err
 	}
 
-	for _, run := range runlist.Items {
-		if checkRunCompleted(run) {
-			continue
-		}
-		return &Run{
-			ID:            run.ID,
-			Status:        string(run.Status),
-			Workspace:     WorkspaceName,
-			CreatedAt:     run.CreatedAt,
-			IsConfirmable: run.Actions.IsConfirmable,
-		}, nil
+	if checkRunCompleted(run) {
+		return nil, nil
 	}
-
-	return nil, nil
+	return &Run{
+		ID:            run.ID,
+		Status:        string(run.Status),
+		Workspace:     workspaceName,
+		CreatedAt:     run.CreatedAt,
+		IsConfirmable: run.Actions.IsConfirmable,
+	}, nil
 }
 
 func (c *tfclient) RunApply(runID string) error {
