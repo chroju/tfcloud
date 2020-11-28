@@ -6,7 +6,6 @@ install:
 	go install
 
 lint:
-	go mod tidy
 	gofmt -s -l .
 	golint ./...
 	go vet ./...
@@ -21,6 +20,7 @@ crossbuild: test
 	gox -os="linux darwin windows" -arch="386 amd64" -output "bin/$(BINARY_NAME)_{{.OS}}_{{.Arch}}/{{.Dir}}"
 
 clean:
+	go mod tidy
 	go clean
 	rm -f $(BINARY_NAME)
 	rm -f bin/

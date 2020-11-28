@@ -42,10 +42,14 @@ func ParseTerraformrc(path string) (*Credential, error) {
 		return nil, fmt.Errorf("%s", diags.Error())
 	}
 
+	return parseTerraformrcConfig(f)
+}
+
+func parseTerraformrcConfig(configFile *hcl.File) (*Credential, error) {
 	var tfrc terraformrc
-	diags = gohcl.DecodeBody(f.Body, nil, &tfrc)
+	diags := gohcl.DecodeBody(configFile.Body, nil, &tfrc)
 	if diags.HasErrors() {
-		return nil, fmt.Errorf("%s", diags.Error())
+		return nil, diags
 	}
 
 	return tfrc.Credentials[0], nil
@@ -79,16 +83,18 @@ func ParseRemoteBackend(root string) (*RemoteBackend, error) {
 					for _, subBlock := range block.Body().Blocks() {
 						if subBlock.Type() == "backend" && subBlock.Labels()[0] == "remote" {
 							subBlockBody := subBlock.Body()
-							ver, err := version.NewConstraint(parseAttribute(block.Body().GetAttribute("required_version")))
+
+							requiredVersion, err := parseRequiredVersion(block.Body().GetAttribute("required_version"))
 							if err != nil {
 								return err
 							}
+
 							config = &RemoteBackend{
 								Organization:    parseAttribute(subBlockBody.GetAttribute("organization")),
 								Hostname:        parseAttribute(subBlockBody.GetAttribute("hostname")),
 								WorkspaceName:   parseAttribute(subBlockBody.Blocks()[0].Body().GetAttribute("name")),
 								WorkspacePrefix: parseAttribute(subBlockBody.Blocks()[0].Body().GetAttribute("prefix")),
-								RequiredVersion: ver,
+								RequiredVersion: requiredVersion,
 							}
 							return nil
 						}
@@ -114,4 +120,11 @@ func parseAttribute(a *hclwrite.Attribute) string {
 		return ""
 	}
 	return string(a.Expr().BuildTokens(nil)[1].Bytes)
+}
+
+func parseRequiredVersion(a *hclwrite.Attribute) (version.Constraints, error) {
+	if a == nil {
+		return nil, nil
+	}
+	return version.NewConstraint(parseAttribute(a))
 }
