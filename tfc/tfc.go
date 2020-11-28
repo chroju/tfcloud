@@ -53,6 +53,8 @@ type TfCloud interface {
 	RunGet(workspaceName, runID string) (*Run, error)
 	RunApply(RunID string) error
 	WorkspaceList(organization string) ([]*Workspace, error)
+	WorkspaceGet(organization, workspace string) (*Workspace, error)
+	WorkspaceUpdateVersion(organization, workspace, version string) error
 	ModuleList() ([]*RegistryModule, error)
 	ModuleVersions(organization, name, provider string) (*RegistryModule, error)
 }
@@ -172,6 +174,28 @@ func (c *tfclient) WorkspaceList(organization string) ([]*Workspace, error) {
 	}
 
 	return result, nil
+}
+
+func (c *tfclient) WorkspaceGet(organization, workspace string) (*Workspace, error) {
+	ws, err := c.client.Workspaces.Read(c.ctx, organization, workspace)
+	if err != nil {
+		return nil, err
+	}
+
+	return &Workspace{
+		ID:               ws.ID,
+		Name:             ws.Name,
+		TerraformVersion: ws.TerraformVersion,
+		CurrentRun:       ws.CurrentRun,
+	}, nil
+}
+
+func (c *tfclient) WorkspaceUpdateVersion(organization, workspace, version string) error {
+	wuo := tfe.WorkspaceUpdateOptions{
+		TerraformVersion: tfe.String(version),
+	}
+	_, err := c.client.Workspaces.Update(c.ctx, organization, workspace, wuo)
+	return err
 }
 
 func (c *tfclient) ModuleList() ([]*RegistryModule, error) {
