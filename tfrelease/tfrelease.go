@@ -54,7 +54,10 @@ func Latest() (*TfRelease, error) {
 	if err != nil {
 		return nil, err
 	}
+	return latest(releases)
+}
 
+func latest(releases []*TfRelease) (*TfRelease, error) {
 	for _, v := range releases {
 		if v.Draft || v.PreRelease {
 			continue
