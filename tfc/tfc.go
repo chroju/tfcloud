@@ -94,19 +94,15 @@ func (c *tfclient) RunList(organization string) ([]*Run, error) {
 		Error    error
 		Response *Run
 	}
-	wlo := &tfe.WorkspaceListOptions{
-		ListOptions: *defaultListOptions,
-		Search:      nil,
-	}
 
-	wslist, err := c.client.Workspaces.List(c.ctx, organization, *wlo)
+	workspaces, err := c.WorkspaceList(organization)
 	if err != nil {
 		return nil, err
 	}
 
 	resultChan := make(chan result)
-	for _, ws := range wslist.Items {
-		go func(ws *tfe.Workspace) {
+	for _, ws := range workspaces {
+		go func(ws *Workspace) {
 			if ws.CurrentRun == nil {
 				resultChan <- result{Error: nil, Response: nil}
 			} else {
@@ -117,10 +113,10 @@ func (c *tfclient) RunList(organization string) ([]*Run, error) {
 	}
 
 	var rtn []*Run
-	for range wslist.Items {
+	for range workspaces {
 		run := <-resultChan
 		if run.Error != nil {
-			return nil, err
+			return nil, run.Error
 		}
 		if run.Response != nil {
 			rtn = append(rtn, run.Response)
@@ -167,17 +163,26 @@ func (c *tfclient) WorkspaceList(organization string) ([]*Workspace, error) {
 		Search:      nil,
 	}
 
-	wslist, err := c.client.Workspaces.List(c.ctx, organization, *wlo)
-	if err != nil {
-		return nil, err
+	var workspaces []*tfe.Workspace
+	for {
+		wslist, err := c.client.Workspaces.List(c.ctx, organization, *wlo)
+		if err != nil {
+			return nil, err
+		}
+		workspaces = append(workspaces, wslist.Items...)
+		if wslist.CurrentPage == wslist.TotalPages {
+			break
+		}
+		wlo.PageNumber = wslist.NextPage
 	}
 
-	result := make([]*Workspace, len(wslist.Items))
-	for i, v := range wslist.Items {
+	result := make([]*Workspace, len(workspaces))
+	for i, v := range workspaces {
 		result[i] = &Workspace{
 			ID:               v.ID,
 			Name:             v.Name,
 			TerraformVersion: v.TerraformVersion,
+			CurrentRun:       v.CurrentRun,
 		}
 	}
 
