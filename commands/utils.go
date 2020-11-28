@@ -5,7 +5,19 @@ import (
 	"fmt"
 	"os"
 	"strings"
+
+	"github.com/chroju/tfcloud/tfc"
 )
+
+func parseDefaultArgs(args []string) (tfc.TfCloud, error) {
+	address := args[len(args)-2]
+	token := args[len(args)-1]
+	client, err := tfc.NewTfCloud(address, token)
+	if err != nil {
+		return nil, fmt.Errorf("Terraform Cloud token is not valid")
+	}
+	return client, nil
+}
 
 func askForConfirmation(s string) (bool, error) {
 	reader := bufio.NewReader(os.Stdin)

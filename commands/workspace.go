@@ -2,12 +2,10 @@ package commands
 
 import (
 	"strings"
-
-	"github.com/mitchellh/cli"
 )
 
 type WorkspaceCommand struct {
-	UI cli.Ui
+	Command
 }
 
 func (c *WorkspaceCommand) Run(args []string) int {
@@ -28,4 +26,5 @@ Usage: tfcloud workspace <subcommand>
 
 SubCommands:
 	list      List all terraform cloud workspaces
+	upgrade   Upgrade the terraform version of the current workspace
 `

@@ -7,13 +7,11 @@ import (
 	"strings"
 	"text/tabwriter"
 
-	"github.com/chroju/tfcloud/tfc"
-	"github.com/mitchellh/cli"
 	flag "github.com/spf13/pflag"
 )
 
 type WorkspaceListCommand struct {
-	UI cli.Ui
+	Command
 }
 
 func (c *WorkspaceListCommand) Run(args []string) int {
@@ -23,13 +21,6 @@ func (c *WorkspaceListCommand) Run(args []string) int {
 		return 1
 	}
 	organization := args[0]
-	address := args[len(args)-2]
-	token := args[len(args)-1]
-	client, err := tfc.NewTfCloud(address, token)
-	if err != nil {
-		c.UI.Error("Terraform Cloud token is not valid.")
-		return 1
-	}
 
 	buf := &bytes.Buffer{}
 	var format string
@@ -46,7 +37,7 @@ func (c *WorkspaceListCommand) Run(args []string) int {
 		return 1
 	}
 
-	result, err := client.WorkspaceList(organization)
+	result, err := c.Client.WorkspaceList(organization)
 	if err != nil {
 		c.UI.Error(err.Error())
 		return 1
@@ -58,7 +49,8 @@ func (c *WorkspaceListCommand) Run(args []string) int {
 		w := tabwriter.NewWriter(out, 0, 4, 1, ' ', 0)
 		fmt.Fprintln(w, "NAME\tID\tLINK")
 		for _, r := range result {
-			fmt.Fprintf(w, "%s\t%s\thttps://%s/app/%s/workspaces/%s\n", r.Name, r.ID, address, organization, r.Name)
+			fmt.Fprintf(w, "%s\t%s\thttps://%s/app/%s/workspaces/%s\n",
+				r.Name, r.ID, c.Client.Address(), organization, r.Name)
 		}
 		w.Flush()
 		c.UI.Output(out.String())

@@ -7,13 +7,11 @@ import (
 	"strings"
 	"text/tabwriter"
 
-	"github.com/chroju/tfcloud/tfc"
-	"github.com/mitchellh/cli"
 	flag "github.com/spf13/pflag"
 )
 
 type RunListCommand struct {
-	UI cli.Ui
+	Command
 }
 
 func (c *RunListCommand) Run(args []string) int {
@@ -39,15 +37,7 @@ func (c *RunListCommand) Run(args []string) int {
 	}
 
 	organization := args[0]
-	address := args[len(args)-2]
-	token := args[len(args)-1]
-	client, err := tfc.NewTfCloud(address, token)
-	if err != nil {
-		c.UI.Error("Terraform Cloud token is not valid.")
-		return 1
-	}
-
-	result, err := client.RunList(organization)
+	result, err := c.Client.RunList(organization)
 	if err != nil {
 		c.UI.Error(err.Error())
 		return 1
@@ -59,7 +49,8 @@ func (c *RunListCommand) Run(args []string) int {
 		w := tabwriter.NewWriter(out, 0, 4, 1, ' ', 0)
 		fmt.Fprintln(w, "WORKSPACE\tSTATUS\tNEEDS CONFIRM\tLINK")
 		for _, r := range result {
-			fmt.Fprintf(w, "%s\t%s\t%v\thttps://%s/app/%s/workspaces/%s/runs/%s\n", r.Workspace, r.Status, r.IsConfirmable, address, organization, r.Workspace, r.ID)
+			fmt.Fprintf(w, "%s\t%s\t%v\thttps://%s/app/%s/workspaces/%s/runs/%s\n",
+				r.Workspace, r.Status, r.IsConfirmable, c.Client.Address(), organization, r.Workspace, r.ID)
 		}
 		w.Flush()
 		c.UI.Output(out.String())

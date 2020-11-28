@@ -2,13 +2,10 @@ package commands
 
 import (
 	"strings"
-
-	"github.com/chroju/tfcloud/tfc"
-	"github.com/mitchellh/cli"
 )
 
 type RunApplyCommand struct {
-	UI cli.Ui
+	Command
 }
 
 func (c *RunApplyCommand) Run(args []string) int {
@@ -17,16 +14,10 @@ func (c *RunApplyCommand) Run(args []string) int {
 		c.UI.Info(c.Help())
 		return 1
 	}
-	runID := args[0]
-	address := args[len(args)-2]
-	token := args[len(args)-1]
-	client, err := tfc.NewTfCloud(address, token)
-	if err != nil {
-		c.UI.Error("Terraform Cloud token is not valid.")
-		return 1
-	}
 
-	if err := client.RunApply(runID); err != nil {
+	runID := args[0]
+
+	if err := c.Client.RunApply(runID); err != nil {
 		c.UI.Error(err.Error())
 		return 1
 	}

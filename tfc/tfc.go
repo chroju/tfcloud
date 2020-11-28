@@ -12,12 +12,6 @@ var defaultListOptions = &tfe.ListOptions{
 	PageSize:   100,
 }
 
-type tfclient struct {
-	client         *tfe.Client
-	registryClient *RegistryClient
-	ctx            context.Context
-}
-
 // Run represents a Terraform workspaces run.
 type Run struct {
 	ID            string
@@ -48,6 +42,8 @@ type RegistryModule struct {
 
 // TfCloud represents Terraform Cloud API client.
 type TfCloud interface {
+	// Address returns a Terraform Cloud / Enterprise API endpoint addres.
+	Address() string
 	// RunList returns all the terraform workspace current runs.
 	RunList(organization string) ([]*Run, error)
 	// RunGet returns the specified terraform workspace run.
@@ -66,10 +62,18 @@ type TfCloud interface {
 	ModuleGet(organization, name, provider string) (*RegistryModule, error)
 }
 
+type tfclient struct {
+	address        string
+	client         *tfe.Client
+	registryClient *RegistryClient
+	ctx            context.Context
+}
+
 // NewTfCloud creates a new TfCloud interface
 func NewTfCloud(address, token string) (TfCloud, error) {
 	config := &tfe.Config{
-		Token: token,
+		Address: address,
+		Token:   token,
 	}
 	client, err := tfe.NewClient(config)
 	if err != nil {
@@ -83,10 +87,15 @@ func NewTfCloud(address, token string) (TfCloud, error) {
 
 	ctx := context.Background()
 	return &tfclient{
+		address,
 		client,
 		registryClient,
 		ctx,
 	}, nil
+}
+
+func (c *tfclient) Address() string {
+	return c.address
 }
 
 func (c *tfclient) RunList(organization string) ([]*Run, error) {

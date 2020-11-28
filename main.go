@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/chroju/tfcloud/commands"
+	"github.com/chroju/tfcloud/tfc"
 	"github.com/chroju/tfcloud/tfparser"
 	"github.com/mitchellh/cli"
 )
@@ -14,62 +15,84 @@ const (
 	version = "0.0.1"
 )
 
+var (
+	// UI is a cli.Ui
+	UI cli.Ui
+)
+
+func init() {
+	UI = &cli.ColoredUi{
+		Ui: &cli.BasicUi{
+			Reader:      os.Stdin,
+			Writer:      os.Stdout,
+			ErrorWriter: os.Stderr,
+		},
+		WarnColor:  cli.UiColorYellow,
+		ErrorColor: cli.UiColorRed,
+	}
+}
+
 func main() {
-	c := cli.NewCLI(app, version)
-	ui := &cli.BasicUi{
-		Reader:      os.Stdin,
-		Writer:      os.Stdout,
-		ErrorWriter: os.Stderr,
-	}
-	defaultUI := &cli.ColoredUi{Ui: ui, WarnColor: cli.UiColorYellow, ErrorColor: cli.UiColorRed}
-
-	var terraformrcPath string
-	if terraformrcPath = os.Getenv("TF_CLI_CONFIG_FILE"); terraformrcPath == "" {
-		terraformrcPath = os.Getenv("HOME") + "/.terraformrc"
-	}
-	credential, err := tfparser.ParseTerraformrc(terraformrcPath)
+	credential, err := initCredential()
 	if err != nil {
-		ui.Error(fmt.Sprintf("Error: %s", err))
+		UI.Error(fmt.Sprintf("Error: %s", err))
 	}
 
-	// c.Args[0] is Terraform cloud endpoint, [1] is API token, [2:] are command line arguments.
-	commonArgs := []string{credential.Name, credential.Token}
-	c.Args = append(os.Args[1:], commonArgs...)
+	client, err := tfc.NewTfCloud("https://"+credential.Hostname, credential.Token)
+	if err != nil {
+		UI.Error(err.Error())
+	}
 
+	command := commands.Command{
+		Client: client,
+		UI:     UI,
+	}
+
+	c := cli.NewCLI(app, version)
+	c.Args = os.Args[1:]
 	c.Commands = map[string]cli.CommandFactory{
 		"run": func() (cli.Command, error) {
-			return &commands.RunCommand{UI: defaultUI}, nil
+			return &commands.RunCommand{Command: command}, nil
 		},
 		"run list": func() (cli.Command, error) {
-			return &commands.RunListCommand{UI: defaultUI}, nil
+			return &commands.RunListCommand{Command: command}, nil
 		},
 		"run apply": func() (cli.Command, error) {
-			return &commands.RunApplyCommand{UI: defaultUI}, nil
+			return &commands.RunApplyCommand{Command: command}, nil
 		},
 		"workspace": func() (cli.Command, error) {
-			return &commands.WorkspaceCommand{UI: defaultUI}, nil
+			return &commands.WorkspaceCommand{Command: command}, nil
 		},
 		"workspace list": func() (cli.Command, error) {
-			return &commands.WorkspaceListCommand{UI: defaultUI}, nil
+			return &commands.WorkspaceListCommand{Command: command}, nil
 		},
 		"workspace upgrade": func() (cli.Command, error) {
-			return &commands.WorkspaceUpgradeCommand{UI: defaultUI}, nil
+			return &commands.WorkspaceUpgradeCommand{Command: command}, nil
 		},
 		"module": func() (cli.Command, error) {
-			return &commands.ModuleCommand{UI: defaultUI}, nil
+			return &commands.ModuleCommand{Command: command}, nil
 		},
 		"module list": func() (cli.Command, error) {
-			return &commands.ModuleListCommand{UI: defaultUI}, nil
+			return &commands.ModuleListCommand{Command: command}, nil
 		},
 		"module versions": func() (cli.Command, error) {
-			return &commands.ModuleVersionsCommand{UI: defaultUI}, nil
+			return &commands.ModuleVersionsCommand{Command: command}, nil
 		},
 	}
 
 	exitStatus, err := c.Run()
 	if err != nil {
-		ui.Error(fmt.Sprintf("Error: %s", err))
+		UI.Error(fmt.Sprintf("Error: %s", err))
 	}
 
 	os.Exit(exitStatus)
+}
+
+func initCredential() (*tfparser.Credential, error) {
+	terraformrcPath := os.Getenv("TF_CLI_CONFIG_FILE")
+	if terraformrcPath == "" {
+		terraformrcPath = os.Getenv("HOME") + "/.terraformrc"
+	}
+
+	return tfparser.ParseTerraformrc(terraformrcPath)
 }

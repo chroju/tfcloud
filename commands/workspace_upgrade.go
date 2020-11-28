@@ -5,16 +5,14 @@ import (
 	"os"
 	"strings"
 
-	"github.com/chroju/tfcloud/tfc"
 	"github.com/chroju/tfcloud/tfparser"
 	"github.com/chroju/tfcloud/tfrelease"
 	version "github.com/hashicorp/go-version"
-	"github.com/mitchellh/cli"
 	flag "github.com/spf13/pflag"
 )
 
 type WorkspaceUpgradeCommand struct {
-	UI cli.Ui
+	Command
 }
 
 func (c *WorkspaceUpgradeCommand) Run(args []string) int {
@@ -35,13 +33,6 @@ func (c *WorkspaceUpgradeCommand) Run(args []string) int {
 	remoteBackend, err := tfparser.ParseRemoteBackend(root)
 	if err != nil {
 		c.UI.Error(err.Error())
-		return 1
-	}
-	address := args[len(args)-2]
-	token := args[len(args)-1]
-	client, err := tfc.NewTfCloud(address, token)
-	if err != nil {
-		c.UI.Error("Terraform Cloud token is not valid.")
 		return 1
 	}
 
@@ -67,7 +58,7 @@ func (c *WorkspaceUpgradeCommand) Run(args []string) int {
 		return 3
 	}
 
-	ws, err := client.WorkspaceGet(remoteBackend.Organization, remoteBackend.WorkspaceName)
+	ws, err := c.Client.WorkspaceGet(remoteBackend.Organization, remoteBackend.WorkspaceName)
 	if err != nil {
 		c.UI.Error(err.Error())
 		return 1
@@ -88,7 +79,7 @@ func (c *WorkspaceUpgradeCommand) Run(args []string) int {
 		}
 	}
 
-	if err = client.WorkspaceUpdateVersion(remoteBackend.Organization, remoteBackend.WorkspaceName, updateVer.String()); err != nil {
+	if err = c.Client.WorkspaceUpdateVersion(remoteBackend.Organization, remoteBackend.WorkspaceName, updateVer.String()); err != nil {
 		c.UI.Error(err.Error())
 		return 2
 	}

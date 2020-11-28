@@ -20,8 +20,8 @@ type terraformrc struct {
 
 // Credential represents a Terraform Cloud credential.
 type Credential struct {
-	Name  string `hcl:"name,label"`
-	Token string `hcl:"token"`
+	Hostname string `hcl:"name,label"`
+	Token    string `hcl:"token"`
 }
 
 // RemoteBackend represents a Terraform remote backend config.

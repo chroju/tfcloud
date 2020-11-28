@@ -2,12 +2,10 @@ package commands
 
 import (
 	"strings"
-
-	"github.com/mitchellh/cli"
 )
 
 type RunCommand struct {
-	UI cli.Ui
+	Command
 }
 
 func (c *RunCommand) Run(args []string) int {
