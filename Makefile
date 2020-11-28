@@ -1,19 +1,23 @@
 BINARY_NAME=tfcloud
 
-.PHONY: install test lint crossbuild clean
+.PHONY: install test lint crossbuild clean build deps
 
-install:
+deps:
+	go mod download
+	go get -u golang.org/x/lint/golint
+
+install: deps
 	go install
 
-lint:
+lint: deps
 	gofmt -s -l .
 	golint ./...
 	go vet ./...
 
-test: lint
+test: lint deps
 	go test -v ./...
 
-build:
+build: deps
 	go build -o $(GOPATH)/bin/$(BINARY_NAME)
 
 crossbuild: test
