@@ -13,7 +13,7 @@ const (
 	tfReleaseURL = "https://api.github.com/repos/hashicorp/terraform/releases"
 )
 
-// TfRelease represents Terraform release
+// TfRelease represents a Terraform release.
 type TfRelease struct {
 	Draft      bool   `json:"draft"`
 	PreRelease bool   `json:"prerelease"`
@@ -21,7 +21,7 @@ type TfRelease struct {
 	Version    *version.Version
 }
 
-// List returns Terraform releases
+// List returns all Terraform releases.
 func List() ([]*TfRelease, error) {
 	resp, err := http.Get(tfReleaseURL)
 	if err != nil {
@@ -48,6 +48,7 @@ func List() ([]*TfRelease, error) {
 	return tfReleases, nil
 }
 
+// Latest returns the latest terraform release (not draft or pre release version).
 func Latest() (*TfRelease, error) {
 	releases, err := List()
 	if err != nil {

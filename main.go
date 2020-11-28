@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/chroju/tfcloud/commands"
+	"github.com/chroju/tfcloud/tfparser"
 	"github.com/mitchellh/cli"
 )
 
@@ -20,12 +21,13 @@ func main() {
 		Writer:      os.Stdout,
 		ErrorWriter: os.Stderr,
 	}
+	defaultUI := &cli.ColoredUi{Ui: ui, WarnColor: cli.UiColorYellow, ErrorColor: cli.UiColorRed}
 
 	var terraformrcPath string
 	if terraformrcPath = os.Getenv("TF_CLI_CONFIG_FILE"); terraformrcPath == "" {
 		terraformrcPath = os.Getenv("HOME") + "/.terraformrc"
 	}
-	credential, err := commands.ParseTerraformrc(terraformrcPath)
+	credential, err := tfparser.ParseTerraformrc(terraformrcPath)
 	if err != nil {
 		ui.Error(fmt.Sprintf("Error: %s", err))
 	}
@@ -36,31 +38,31 @@ func main() {
 
 	c.Commands = map[string]cli.CommandFactory{
 		"run": func() (cli.Command, error) {
-			return &commands.RunCommand{UI: &cli.ColoredUi{Ui: ui, WarnColor: cli.UiColorYellow, ErrorColor: cli.UiColorRed}}, nil
+			return &commands.RunCommand{UI: defaultUI}, nil
 		},
 		"run list": func() (cli.Command, error) {
-			return &commands.RunListCommand{UI: &cli.ColoredUi{Ui: ui, WarnColor: cli.UiColorYellow, ErrorColor: cli.UiColorRed}}, nil
+			return &commands.RunListCommand{UI: defaultUI}, nil
 		},
 		"run apply": func() (cli.Command, error) {
-			return &commands.RunApplyCommand{UI: &cli.ColoredUi{Ui: ui, WarnColor: cli.UiColorYellow, ErrorColor: cli.UiColorRed}}, nil
+			return &commands.RunApplyCommand{UI: defaultUI}, nil
 		},
 		"workspace": func() (cli.Command, error) {
-			return &commands.WorkspaceCommand{UI: &cli.ColoredUi{Ui: ui, WarnColor: cli.UiColorYellow, ErrorColor: cli.UiColorRed}}, nil
+			return &commands.WorkspaceCommand{UI: defaultUI}, nil
 		},
 		"workspace list": func() (cli.Command, error) {
-			return &commands.WorkspaceListCommand{UI: &cli.ColoredUi{Ui: ui, WarnColor: cli.UiColorYellow, ErrorColor: cli.UiColorRed}}, nil
+			return &commands.WorkspaceListCommand{UI: defaultUI}, nil
 		},
 		"workspace upgrade": func() (cli.Command, error) {
-			return &commands.WorkspaceUpgradeCommand{UI: &cli.ColoredUi{Ui: ui, WarnColor: cli.UiColorYellow, ErrorColor: cli.UiColorRed}}, nil
+			return &commands.WorkspaceUpgradeCommand{UI: defaultUI}, nil
 		},
 		"module": func() (cli.Command, error) {
-			return &commands.ModuleCommand{UI: &cli.ColoredUi{Ui: ui, WarnColor: cli.UiColorYellow, ErrorColor: cli.UiColorRed}}, nil
+			return &commands.ModuleCommand{UI: defaultUI}, nil
 		},
 		"module list": func() (cli.Command, error) {
-			return &commands.ModuleListCommand{UI: &cli.ColoredUi{Ui: ui, WarnColor: cli.UiColorYellow, ErrorColor: cli.UiColorRed}}, nil
+			return &commands.ModuleListCommand{UI: defaultUI}, nil
 		},
 		"module versions": func() (cli.Command, error) {
-			return &commands.ModuleVersionsCommand{UI: &cli.ColoredUi{Ui: ui, WarnColor: cli.UiColorYellow, ErrorColor: cli.UiColorRed}}, nil
+			return &commands.ModuleVersionsCommand{UI: defaultUI}, nil
 		},
 	}
 

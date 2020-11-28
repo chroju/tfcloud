@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/chroju/tfcloud/tfc"
+	"github.com/chroju/tfcloud/tfparser"
 	"github.com/chroju/tfcloud/tfrelease"
 	version "github.com/hashicorp/go-version"
 	"github.com/mitchellh/cli"
@@ -31,7 +32,7 @@ func (c *WorkspaceUpgradeCommand) Run(args []string) int {
 		return 1
 	}
 
-	cliConfig, err := parseTfRemoteBackend(root)
+	remoteBackend, err := tfparser.ParseRemoteBackend(root)
 	if err != nil {
 		c.UI.Error(err.Error())
 		return 1
@@ -61,12 +62,12 @@ func (c *WorkspaceUpgradeCommand) Run(args []string) int {
 		}
 	}
 
-	if !cliConfig.RequiredVersion.Check(updateVer) {
-		c.UI.Error(fmt.Sprintf("Version %s is not compatible with required version '%s'", updateVer.String(), cliConfig.RequiredVersion.String()))
+	if !remoteBackend.RequiredVersion.Check(updateVer) {
+		c.UI.Error(fmt.Sprintf("Version %s is not compatible with required version '%s'", updateVer.String(), remoteBackend.RequiredVersion.String()))
 		return 3
 	}
 
-	ws, err := client.WorkspaceGet(cliConfig.Organization, cliConfig.Workspace)
+	ws, err := client.WorkspaceGet(remoteBackend.Organization, remoteBackend.WorkspaceName)
 	if err != nil {
 		c.UI.Error(err.Error())
 		return 1
@@ -87,7 +88,7 @@ func (c *WorkspaceUpgradeCommand) Run(args []string) int {
 		}
 	}
 
-	if err = client.WorkspaceUpdateVersion(cliConfig.Organization, cliConfig.Workspace, updateVer.String()); err != nil {
+	if err = client.WorkspaceUpdateVersion(remoteBackend.Organization, remoteBackend.WorkspaceName, updateVer.String()); err != nil {
 		c.UI.Error(err.Error())
 		return 2
 	}

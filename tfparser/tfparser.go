@@ -1,4 +1,4 @@
-package commands
+package tfparser
 
 import (
 	"fmt"
@@ -15,40 +15,45 @@ import (
 )
 
 type terraformrc struct {
-	Credentials []*credential `hcl:"credentials,block"`
+	Credentials []*Credential `hcl:"credentials,block"`
 }
 
-type credential struct {
+// Credential represents a Terraform Cloud credential.
+type Credential struct {
 	Name  string `hcl:"name,label"`
 	Token string `hcl:"token"`
 }
 
-type cliConfig struct {
+// RemoteBackend represents a Terraform remote backend config.
+type RemoteBackend struct {
 	Token           string
 	Hostname        string
 	Organization    string
-	Workspace       string
+	WorkspaceName   string
+	WorkspacePrefix string
 	RequiredVersion version.Constraints
 }
 
-func ParseTerraformrc(path string) (*credential, error) {
+// ParseTerraformrc parses terraformrc file and returns a Terraform Cloud credential.
+func ParseTerraformrc(path string) (*Credential, error) {
 	parser := hclparse.NewParser()
 	f, diags := parser.ParseHCLFile(path)
 	if diags.HasErrors() {
-		return nil, fmt.Errorf("Parse %s failed", path)
+		return nil, fmt.Errorf("%s", diags.Error())
 	}
 
 	var tfrc terraformrc
 	diags = gohcl.DecodeBody(f.Body, nil, &tfrc)
 	if diags.HasErrors() {
-		return nil, fmt.Errorf("Decode %s failed", path)
+		return nil, fmt.Errorf("%s", diags.Error())
 	}
 
 	return tfrc.Credentials[0], nil
 }
 
-func parseTfRemoteBackend(root string) (*cliConfig, error) {
-	var config *cliConfig
+// ParseRemoteBackend parses remote backend config in the specified directory and returns values.
+func ParseRemoteBackend(root string) (*RemoteBackend, error) {
+	var config *RemoteBackend
 	err := filepath.Walk(root,
 		func(path string, info os.FileInfo, err error) error {
 			if err != nil {
@@ -78,10 +83,11 @@ func parseTfRemoteBackend(root string) (*cliConfig, error) {
 							if err != nil {
 								return err
 							}
-							config = &cliConfig{
+							config = &RemoteBackend{
 								Organization:    parseAttribute(subBlockBody.GetAttribute("organization")),
 								Hostname:        parseAttribute(subBlockBody.GetAttribute("hostname")),
-								Workspace:       parseAttribute(subBlockBody.Blocks()[0].Body().GetAttribute("name")),
+								WorkspaceName:   parseAttribute(subBlockBody.Blocks()[0].Body().GetAttribute("name")),
+								WorkspacePrefix: parseAttribute(subBlockBody.Blocks()[0].Body().GetAttribute("prefix")),
 								RequiredVersion: ver,
 							}
 							return nil
