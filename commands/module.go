@@ -25,6 +25,6 @@ const helpModule = `
 Usage: tfcloud module <subcommand>
 
 SubCommands:
-	list      List all terraform private modules in your account
-	versions  List all terraform private module versions
+	list        List all terraform private modules in your account
+	versions    List all terraform private module versions
 `

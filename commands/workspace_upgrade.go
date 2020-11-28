@@ -13,48 +13,49 @@ import (
 
 type WorkspaceUpgradeCommand struct {
 	Command
+	autoApprove   bool
+	rootDir       string
+	versionString string
+	version       *version.Version
 }
 
 func (c *WorkspaceUpgradeCommand) Run(args []string) int {
-	var approve bool
-	var root, versionString string
-	var updateVer *version.Version
-
 	currentDir, _ := os.Getwd()
 	f := flag.NewFlagSet("workspace_upgrade", flag.ExitOnError)
-	f.StringVar(&root, "root-path", currentDir, "Terraform config root path (default: current directory)")
-	f.StringVar(&versionString, "tfversion", "latest", "Terraform version to upgrade")
-	f.BoolVar(&approve, "auto-approve", false, "Automatic approval for upgrade")
+	f.StringVar(&c.rootDir, "root-path", currentDir, "Terraform config root path (default: current directory)")
+	f.StringVar(&c.versionString, "tfversion", "latest", "Terraform version to upgrade")
+	f.BoolVar(&c.autoApprove, "auto-approve", false, "Automatic approval for upgrade")
 	if err := f.Parse(args); err != nil {
+		c.UI.Error(fmt.Sprintf("Arguments are not valid: %s", err))
 		c.UI.Error(err.Error())
 		return 1
 	}
 
-	remoteBackend, err := tfparser.ParseRemoteBackend(root)
+	remoteBackend, err := tfparser.ParseRemoteBackend(c.rootDir)
 	if err != nil {
 		c.UI.Error(err.Error())
 		return 1
 	}
 
-	if versionString == "latest" {
+	if c.versionString == "latest" {
 		latest, err := tfrelease.Latest()
 		if err != nil {
 			c.UI.Error(err.Error())
 			return 1
 		}
 		c.UI.Info(fmt.Sprintf("Latest terraform version is %s ...", latest.Version.String()))
-		updateVer = latest.Version
+		c.version = latest.Version
 	} else {
-		updateVer, err = version.NewVersion(versionString)
+		c.version, err = version.NewVersion(c.versionString)
 		if err != nil {
-			c.UI.Error(fmt.Sprintf("%s is not valid version", versionString))
+			c.UI.Error(fmt.Sprintf("%s is not valid version", c.versionString))
 			c.UI.Output(helpMessageUpgrade)
 			return 1
 		}
 	}
 
-	if !remoteBackend.RequiredVersion.Check(updateVer) {
-		c.UI.Error(fmt.Sprintf("Version %s is not compatible with required version '%s'", updateVer.String(), remoteBackend.RequiredVersion.String()))
+	if !remoteBackend.RequiredVersion.Check(c.version) {
+		c.UI.Error(fmt.Sprintf("Version %s is not compatible with required version '%s'", c.version.String(), remoteBackend.RequiredVersion.String()))
 		return 3
 	}
 
@@ -64,13 +65,13 @@ func (c *WorkspaceUpgradeCommand) Run(args []string) int {
 		return 1
 	}
 
-	if ws.TerraformVersion == updateVer.String() {
-		c.UI.Warn(fmt.Sprintf("Version %s is already set up.", updateVer.String()))
+	if ws.TerraformVersion == c.version.String() {
+		c.UI.Warn(fmt.Sprintf("Version %s is already set up.", c.version.String()))
 		return 0
 	}
 
-	if !approve {
-		if yn, err := askForConfirmation(fmt.Sprintf("Upgraded: %s -> %s\n ?", ws.TerraformVersion, updateVer)); err != nil {
+	if !c.autoApprove {
+		if yn, err := askForConfirmation(fmt.Sprintf("Upgraded: %s -> %s\n ?", ws.TerraformVersion, c.version)); err != nil {
 			c.UI.Error(err.Error())
 			return 2
 		} else if !yn {
@@ -79,7 +80,7 @@ func (c *WorkspaceUpgradeCommand) Run(args []string) int {
 		}
 	}
 
-	if err = c.Client.WorkspaceUpdateVersion(remoteBackend.Organization, remoteBackend.WorkspaceName, updateVer.String()); err != nil {
+	if err = c.Client.WorkspaceUpdateVersion(remoteBackend.Organization, remoteBackend.WorkspaceName, c.version.String()); err != nil {
 		c.UI.Error(err.Error())
 		return 2
 	}

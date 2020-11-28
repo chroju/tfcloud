@@ -1,26 +1,30 @@
 package commands
 
 import (
+	"fmt"
 	"strings"
 )
 
 type RunApplyCommand struct {
 	Command
+	runID string
 }
 
 func (c *RunApplyCommand) Run(args []string) int {
 	if len(args) != 3 {
-		c.UI.Error("Arguments is not valid.")
+		c.UI.Error("Arguments are not valid.")
 		c.UI.Info(c.Help())
 		return 1
 	}
 
-	runID := args[0]
+	c.runID = args[0]
 
-	if err := c.Client.RunApply(runID); err != nil {
+	if err := c.Client.RunApply(c.runID); err != nil {
 		c.UI.Error(err.Error())
 		return 1
 	}
+
+	c.UI.Info(fmt.Sprintf("ID %s has been applied successfully.", c.runID))
 
 	return 0
 }

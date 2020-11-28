@@ -12,26 +12,26 @@ import (
 
 type WorkspaceListCommand struct {
 	Command
+	format string
 }
 
 func (c *WorkspaceListCommand) Run(args []string) int {
 	if len(args) < 3 {
-		c.UI.Error("Arguments is not valid.")
+		c.UI.Error("Arguments are not valid.")
 		c.UI.Info(c.Help())
 		return 1
 	}
 	organization := args[0]
 
-	buf := &bytes.Buffer{}
-	var format string
-	f := flag.NewFlagSet("module_list", flag.ContinueOnError)
-	f.SetOutput(buf)
-	f.StringVar(&format, "output", "table", "output format (table, json)")
+	f := flag.NewFlagSet("workspace_list", flag.ContinueOnError)
+	f.StringVar(&c.format, "output", "table", "output format (table, json)")
 	if err := f.Parse(args); err != nil {
+		c.UI.Error(fmt.Sprintf("Arguments are not valid: %s", err))
 		c.UI.Info(c.Help())
 		return 1
 	}
-	if format != "table" && format != "json" {
+
+	if c.format != "table" && c.format != "json" {
 		c.UI.Error("--output must be 'table' or 'json'")
 		c.UI.Info(c.Help())
 		return 1
@@ -43,7 +43,7 @@ func (c *WorkspaceListCommand) Run(args []string) int {
 		return 1
 	}
 
-	switch format {
+	switch c.format {
 	case "table":
 		out := new(bytes.Buffer)
 		w := tabwriter.NewWriter(out, 0, 4, 1, ' ', 0)
