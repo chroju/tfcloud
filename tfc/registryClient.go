@@ -51,6 +51,7 @@ var (
 	ErrResourceNotFound = errors.New("resource not found")
 )
 
+// RegistryClient is the Terraform Enterprise registry API client.
 type RegistryClient struct {
 	baseURL           *url.URL
 	token             string
@@ -64,6 +65,10 @@ type RegistryClient struct {
 	RegistryModules RegistryModules
 }
 
+// RegistryModules describes the registry modules related methods that the Terraform
+// Enterprise API supports.
+//
+// TFE API docs: https://www.terraform.io/docs/registry/api.html#service-discovery
 type RegistryModules interface {
 	List(ctx context.Context, options RegistryModuleListOptions) (*RegistryModuleList, error)
 }
@@ -72,18 +77,20 @@ type registryModules struct {
 	client *RegistryClient
 }
 
+// RegistryModuleListOptions represents the options for listing registry modules.
 type RegistryModuleListOptions struct {
 	Limit    int    `url:"limit"`
 	Provider string `url:"provider"`
 	Verified bool   `url:"verified"`
 }
 
+// RegistryModuleList represents a list of registry modules.
 type RegistryModuleList struct {
 	*tfe.Pagination
 	Items []*tfe.RegistryModule
 }
 
-type RegistryModuleListResponse struct {
+type registryModuleListResponse struct {
 	Meta struct {
 		Limit         int    `json:"limit"`
 		CurrentOffset int    `json:"current_offset"`
@@ -527,13 +534,14 @@ func checkResponseCode(r *http.Response) error {
 	return fmt.Errorf(strings.Join(errs, "\n"))
 }
 
+// List all the registory modules
 func (s *registryModules) List(ctx context.Context, options RegistryModuleListOptions) (*RegistryModuleList, error) {
 	req, err := s.client.newRequest("GET", "modules", &options)
 	if err != nil {
 		return nil, err
 	}
 
-	res := &RegistryModuleListResponse{}
+	res := &registryModuleListResponse{}
 	err = s.client.do(ctx, req, res)
 	if err != nil {
 		return nil, err

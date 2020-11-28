@@ -7,7 +7,7 @@ import (
 	tfe "github.com/hashicorp/go-tfe"
 )
 
-var ListOptions = &tfe.ListOptions{
+var defaultListOptions = &tfe.ListOptions{
 	PageNumber: 0,
 	PageSize:   100,
 }
@@ -18,6 +18,7 @@ type tfclient struct {
 	ctx            context.Context
 }
 
+// Run represents a Terraform workspaces run.
 type Run struct {
 	ID            string
 	Organization  string
@@ -27,6 +28,7 @@ type Run struct {
 	CreatedAt     time.Time
 }
 
+// Workspace represents a Terraform Cloud workspace.
 type Workspace struct {
 	ID               string
 	Name             string
@@ -34,6 +36,7 @@ type Workspace struct {
 	CurrentRun       *tfe.Run
 }
 
+// RegistryModule represents a Terraform Cloud registry module.
 type RegistryModule struct {
 	ID              string
 	Name            string
@@ -43,20 +46,24 @@ type RegistryModule struct {
 	VCSRepo         string
 }
 
-type RegistryModuleVersionStatuses struct {
-	Version string
-}
-
-// Client represents Terraform Cloud API client
+// TfCloud represents Terraform Cloud API client.
 type TfCloud interface {
+	// RunList returns all the terraform workspace current runs.
 	RunList(organization string) ([]*Run, error)
+	// RunGet returns the specified terraform workspace run.
 	RunGet(workspaceName, runID string) (*Run, error)
+	// RunApply applys the specified terraform workspace run.
 	RunApply(RunID string) error
+	// WorkspaceList returns all the terraform workspaces in an organization.
 	WorkspaceList(organization string) ([]*Workspace, error)
+	// WorkspaceGet returns the specified terraform workspace.
 	WorkspaceGet(organization, workspace string) (*Workspace, error)
+	// WorkspaceUpdateVersion updates the terraform version config in the specified workspace.
 	WorkspaceUpdateVersion(organization, workspace, version string) error
+	// ModuleList returns all the terraform registry modules.
 	ModuleList() ([]*RegistryModule, error)
-	ModuleVersions(organization, name, provider string) (*RegistryModule, error)
+	// ModuleGet returns the specified terraform registry module.
+	ModuleGet(organization, name, provider string) (*RegistryModule, error)
 }
 
 // NewTfCloud creates a new TfCloud interface
@@ -88,7 +95,7 @@ func (c *tfclient) RunList(organization string) ([]*Run, error) {
 		Response *Run
 	}
 	wlo := &tfe.WorkspaceListOptions{
-		ListOptions: *ListOptions,
+		ListOptions: *defaultListOptions,
 		Search:      nil,
 	}
 
@@ -132,6 +139,7 @@ func (c *tfclient) RunGet(workspaceName, runID string) (*Run, error) {
 	if checkRunCompleted(run) {
 		return nil, nil
 	}
+
 	return &Run{
 		ID:            run.ID,
 		Status:        string(run.Status),
@@ -155,7 +163,7 @@ func (c *tfclient) RunApply(runID string) error {
 
 func (c *tfclient) WorkspaceList(organization string) ([]*Workspace, error) {
 	wlo := &tfe.WorkspaceListOptions{
-		ListOptions: *ListOptions,
+		ListOptions: *defaultListOptions,
 		Search:      nil,
 	}
 
@@ -226,7 +234,7 @@ func (c *tfclient) ModuleList() ([]*RegistryModule, error) {
 	return result, nil
 }
 
-func (c *tfclient) ModuleVersions(organization, name, provider string) (*RegistryModule, error) {
+func (c *tfclient) ModuleGet(organization, name, provider string) (*RegistryModule, error) {
 	module, err := c.client.RegistryModules.Read(c.ctx, organization, name, provider)
 	if err != nil {
 		return nil, err

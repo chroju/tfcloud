@@ -27,7 +27,7 @@ func (c *ModuleVersionsCommand) Run(args []string) int {
 		return 1
 	}
 
-	result, err := client.ModuleVersions(organization, name, provider)
+	result, err := client.ModuleGet(organization, name, provider)
 	if err != nil {
 		c.UI.Error(err.Error())
 		return 1
