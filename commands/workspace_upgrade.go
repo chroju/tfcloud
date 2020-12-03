@@ -23,7 +23,7 @@ func (c *WorkspaceUpgradeCommand) Run(args []string) int {
 	currentDir, _ := os.Getwd()
 	f := flag.NewFlagSet("workspace_upgrade", flag.ExitOnError)
 	f.StringVar(&c.rootDir, "root-path", currentDir, "Terraform config root path (default: current directory)")
-	f.StringVar(&c.versionString, "tfversion", "latest", "Terraform version to upgrade")
+	f.StringVarP(&c.versionString, "upgrade-version", "u", "latest", "Terraform version to upgrade")
 	f.BoolVar(&c.autoApprove, "auto-approve", false, "Automatic approval for upgrade")
 	if err := f.Parse(args); err != nil {
 		c.UI.Error(fmt.Sprintf("Arguments are not valid: %s", err))
@@ -104,11 +104,11 @@ Notes:
   This command works by reading the remote config in the current directory.
 
 Options:
-  --root-path       Terraform config root path. (default: current directory)
-  --tfversion       Terraform version to upgrade.
-				    It must be in the correct semantic version format like 0.12.1, v0.12.2 .
-				    Or you can specify "latest" to automatically upgrade to the latest version.
-				    (default: latest)
-  --auto-approve    Skip interactive approval of upgrade.
+  --upgrade-version, -u    Terraform version to upgrade.
+                           It must be in the correct semantic version format like 0.12.1, v0.12.2 .
+                           Or you can specify "latest" to automatically upgrade to the latest version.
+                           (default: latest)
+  --root-path              Terraform config root path. (default: current directory)
+  --auto-approve           Skip interactive approval of upgrade.
 
 `
