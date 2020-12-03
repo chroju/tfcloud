@@ -43,7 +43,7 @@ func (c *ModuleVersionsCommand) Run(args []string) int {
 }
 
 func (c *ModuleVersionsCommand) Help() string {
-	return strings.TrimSpace(helpWorkspaceList)
+	return strings.TrimSpace(helpModuleVersions)
 }
 
 func (c *ModuleVersionsCommand) Synopsis() string {

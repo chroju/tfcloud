@@ -16,7 +16,7 @@ type WorkspaceListCommand struct {
 }
 
 func (c *WorkspaceListCommand) Run(args []string) int {
-	if len(args) < 3 {
+	if len(args) == 0 {
 		c.UI.Error("Arguments are not valid.")
 		c.UI.Info(c.Help())
 		return 1
@@ -46,11 +46,11 @@ func (c *WorkspaceListCommand) Run(args []string) int {
 	switch c.format {
 	case "table":
 		out := new(bytes.Buffer)
-		w := tabwriter.NewWriter(out, 0, 4, 1, ' ', 0)
-		fmt.Fprintln(w, "NAME\tID\tLINK")
+		w := tabwriter.NewWriter(out, 0, 4, 2, ' ', 0)
+		fmt.Fprintln(w, "NAME\tVERSION\tLINK")
 		for _, r := range result {
 			fmt.Fprintf(w, "%s\t%s\thttps://%s/app/%s/workspaces/%s\n",
-				r.Name, r.ID, c.Client.Address(), organization, r.Name)
+				r.Name, r.TerraformVersion, c.Client.Address(), organization, r.Name)
 		}
 		w.Flush()
 		c.UI.Output(out.String())
