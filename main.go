@@ -43,9 +43,12 @@ func main() {
 		UI.Error(err.Error())
 	}
 
+	format := os.Getenv("TFCLOUD_FORMAT")
+
 	command := commands.Command{
 		Client: client,
 		UI:     UI,
+		Format: format,
 	}
 
 	c := cli.NewCLI(app, version)

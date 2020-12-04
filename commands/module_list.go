@@ -2,12 +2,9 @@ package commands
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"strings"
 	"text/tabwriter"
-
-	flag "github.com/spf13/pflag"
 )
 
 type ModuleListCommand struct {
@@ -16,45 +13,48 @@ type ModuleListCommand struct {
 }
 
 func (c *ModuleListCommand) Run(args []string) int {
-	f := flag.NewFlagSet("module_list", flag.ContinueOnError)
-	f.StringVar(&c.format, "output", "table", "output format (table, json)")
-	if err := f.Parse(args); err != nil {
-		c.UI.Error(fmt.Sprintf("Arguments are not valid: %s", err))
+	if len(args) != 0 {
+		c.UI.Error("Arguments are not valid.")
 		c.UI.Info(c.Help())
 		return 1
 	}
 
-	if c.format != "table" && c.format != "json" {
-		c.UI.Error("--output must be 'table' or 'json'")
-		c.UI.Info(c.Help())
-		return 1
-	}
-
-	result, err := c.Client.ModuleList()
+	mdlist, err := c.Client.ModuleList()
 	if err != nil {
 		c.UI.Error(err.Error())
 		return 1
 	}
 
-	switch c.format {
-	case "table":
+	switch c.Command.Format {
+	case "alfred":
+		alfredItems := make([]AlfredFormatItem, len(mdlist))
+		for i, v := range mdlist {
+			alfredItems[i] = AlfredFormatItem{
+				Title:        v.ID,
+				SubTitle:     v.VersionStatuses[0].Version,
+				Arg:          fmt.Sprintf("https://%s/app/%s/modules/view/%s/%s/%s", c.Client.Address(), v.Organization, v.Name, v.Provider, v.VersionStatuses[0].Version),
+				Match:        v.Name,
+				AutoComplete: v.Name,
+				UID:          v.ID,
+			}
+		}
+		out, err := AlfredFormatOutput(alfredItems, "No modules found")
+		if err != nil {
+			c.UI.Error(err.Error())
+			return 1
+		}
+		c.UI.Output(out)
+	default:
 		out := new(bytes.Buffer)
 		w := tabwriter.NewWriter(out, 0, 4, 1, ' ', 0)
 		fmt.Fprintln(w, "NAME\tLATEST\tLINK")
-		for _, r := range result {
+		for _, r := range mdlist {
 			latest := r.VersionStatuses[0].Version
 			fmt.Fprintf(w, "%s\t%s\thttps://%s/app/%s/modules/view/%s/%s/%s\n",
 				r.Name, latest, c.Client.Address(), r.Organization, r.Name, r.Provider, latest)
 		}
 		w.Flush()
 		c.UI.Output(out.String())
-	case "json":
-		out, err := json.Marshal(result)
-		if err != nil {
-			c.UI.Error(err.Error())
-			return 1
-		}
-		c.UI.Output(string(out))
 	}
 	return 0
 }

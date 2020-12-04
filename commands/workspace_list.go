@@ -2,65 +2,59 @@ package commands
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"strings"
 	"text/tabwriter"
-
-	flag "github.com/spf13/pflag"
 )
 
 type WorkspaceListCommand struct {
 	Command
-	format string
+	organization string
 }
 
 func (c *WorkspaceListCommand) Run(args []string) int {
-	if len(args) == 0 {
+	if len(args) != 1 {
 		c.UI.Error("Arguments are not valid.")
 		c.UI.Info(c.Help())
 		return 1
 	}
-	organization := args[0]
+	c.organization = args[0]
 
-	f := flag.NewFlagSet("workspace_list", flag.ContinueOnError)
-	f.StringVar(&c.format, "output", "table", "output format (table, json)")
-	if err := f.Parse(args); err != nil {
-		c.UI.Error(fmt.Sprintf("Arguments are not valid: %s", err))
-		c.UI.Info(c.Help())
-		return 1
-	}
-
-	if c.format != "table" && c.format != "json" {
-		c.UI.Error("--output must be 'table' or 'json'")
-		c.UI.Info(c.Help())
-		return 1
-	}
-
-	result, err := c.Client.WorkspaceList(organization)
+	wslist, err := c.Client.WorkspaceList(c.organization)
 	if err != nil {
 		c.UI.Error(err.Error())
 		return 1
 	}
 
-	switch c.format {
-	case "table":
-		out := new(bytes.Buffer)
-		w := tabwriter.NewWriter(out, 0, 4, 2, ' ', 0)
-		fmt.Fprintln(w, "NAME\tVERSION\tLINK")
-		for _, r := range result {
-			fmt.Fprintf(w, "%s\t%s\thttps://%s/app/%s/workspaces/%s\n",
-				r.Name, r.TerraformVersion, c.Client.Address(), organization, r.Name)
+	switch c.Command.Format {
+	case "alfred":
+		alfredItems := make([]AlfredFormatItem, len(wslist))
+		for i, v := range wslist {
+			alfredItems[i] = AlfredFormatItem{
+				Title:        v.Name,
+				SubTitle:     fmt.Sprintf("vcs repo: %s", v.VCSRepoName),
+				Arg:          fmt.Sprintf("https://%s/app/%s/workspaces/%s", c.Client.Address(), c.organization, v.Name),
+				Match:        v.Name,
+				AutoComplete: v.Name,
+				UID:          v.ID,
+			}
 		}
-		w.Flush()
-		c.UI.Output(out.String())
-	case "json":
-		out, err := json.Marshal(result)
+		out, err := AlfredFormatOutput(alfredItems, "No workspaces found")
 		if err != nil {
 			c.UI.Error(err.Error())
 			return 1
 		}
-		c.UI.Output(string(out))
+		c.UI.Output(out)
+	default:
+		out := new(bytes.Buffer)
+		w := tabwriter.NewWriter(out, 0, 4, 2, ' ', 0)
+		fmt.Fprintln(w, "NAME\tVERSION\tLINK")
+		for _, v := range wslist {
+			fmt.Fprintf(w, "%s\t%s\thttps://%s/app/%s/workspaces/%s\n",
+				v.Name, v.TerraformVersion, c.Client.Address(), c.organization, v.Name)
+		}
+		w.Flush()
+		c.UI.Output(out.String())
 	}
 	return 0
 }
