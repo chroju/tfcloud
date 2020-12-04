@@ -33,7 +33,7 @@ func (c *WorkspaceListCommand) Run(args []string) int {
 			alfredItems[i] = AlfredFormatItem{
 				Title:        v.Name,
 				SubTitle:     fmt.Sprintf("vcs repo: %s", v.VCSRepoName),
-				Arg:          fmt.Sprintf("https://%s/app/%s/workspaces/%s", c.Client.Address(), c.organization, v.Name),
+				Arg:          fmt.Sprintf("%s/app/%s/workspaces/%s", c.Client.Address(), c.organization, v.Name),
 				Match:        strings.ReplaceAll(v.Name, "-", " "),
 				AutoComplete: v.Name,
 				UID:          v.ID,
