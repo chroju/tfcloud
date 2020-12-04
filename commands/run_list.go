@@ -5,11 +5,13 @@ import (
 	"fmt"
 	"strings"
 	"text/tabwriter"
+	"time"
 )
 
 type RunListCommand struct {
 	Command
 	organization string
+	localTZ      *time.Location
 }
 
 func (c *RunListCommand) Run(args []string) int {
@@ -19,6 +21,8 @@ func (c *RunListCommand) Run(args []string) int {
 		return 1
 	}
 	c.organization = args[0]
+	localTZ, _ := time.LoadLocation("Local")
+	c.localTZ = localTZ
 
 	runlist, err := c.Client.RunList(c.organization)
 	if err != nil {
@@ -30,9 +34,10 @@ func (c *RunListCommand) Run(args []string) int {
 	case "alfred":
 		alfredItems := make([]AlfredFormatItem, len(runlist))
 		for i, v := range runlist {
+			localtime := v.CreatedAt.In(c.localTZ)
 			alfredItems[i] = AlfredFormatItem{
 				Title:        v.Workspace,
-				SubTitle:     v.CreatedAt.String(),
+				SubTitle:     fmt.Sprintf("%s / %s", v.Status, localtime),
 				Arg:          fmt.Sprintf("%s/app/%s/workspaces/%s/runs/%s", c.Client.Address(), c.organization, v.Workspace, v.ID),
 				Match:        strings.ReplaceAll(v.Workspace, "-", " "),
 				AutoComplete: v.Workspace,
