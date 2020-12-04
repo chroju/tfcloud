@@ -28,6 +28,7 @@ type Workspace struct {
 	Name             string
 	TerraformVersion string
 	CurrentRun       *tfe.Run
+	VCSRepoName      string
 }
 
 // RegistryModule represents a Terraform Cloud registry module.
@@ -187,11 +188,16 @@ func (c *tfclient) WorkspaceList(organization string) ([]*Workspace, error) {
 
 	result := make([]*Workspace, len(workspaces))
 	for i, v := range workspaces {
+		vcsRepoName := ""
+		if v.VCSRepo != nil {
+			vcsRepoName = v.VCSRepo.Identifier
+		}
 		result[i] = &Workspace{
 			ID:               v.ID,
 			Name:             v.Name,
 			TerraformVersion: v.TerraformVersion,
 			CurrentRun:       v.CurrentRun,
+			VCSRepoName:      vcsRepoName,
 		}
 	}
 
