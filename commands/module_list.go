@@ -31,7 +31,7 @@ func (c *ModuleListCommand) Run(args []string) int {
 			alfredItems[i] = AlfredFormatItem{
 				Title:        v.ID,
 				SubTitle:     fmt.Sprintf("source: %s", v.Source),
-				Arg:          fmt.Sprintf("https://%s/app/%s/modules/view/%s/%s/%s", c.Client.Address(), v.Organization, v.Name, v.Provider, v.VersionStatuses[0].Version),
+				Arg:          fmt.Sprintf("%s/app/%s/modules/view/%s/%s/%s", c.Client.Address(), v.Organization, v.Name, v.Provider, v.VersionStatuses[0].Version),
 				Match:        v.Name,
 				AutoComplete: v.Name,
 				UID:          v.ID,

@@ -71,7 +71,7 @@ func (c *WorkspaceUpgradeCommand) Run(args []string) int {
 	}
 
 	if !c.autoApprove {
-		if yn, err := askForConfirmation(fmt.Sprintf("Upgraded: %s -> %s\n ?", ws.TerraformVersion, c.version)); err != nil {
+		if yn, err := askForConfirmation(fmt.Sprintf("Upgrade: %s -> %s\n ?", ws.TerraformVersion, c.version)); err != nil {
 			c.UI.Error(err.Error())
 			return 2
 		} else if !yn {
