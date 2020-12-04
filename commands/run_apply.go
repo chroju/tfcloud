@@ -34,9 +34,16 @@ func (c *RunApplyCommand) Help() string {
 }
 
 func (c *RunApplyCommand) Synopsis() string {
-	return "Apply terraform run which needs a confirmation"
+	return "Applies a run that is paused waiting for confirmation after a plan"
 }
 
 const helpRunApply = `
 Usage: tfcloud run apply <run ID>
+
+  Applies a run that is paused waiting for confirmation after a plan.
+
+Caution:
+	This command is not recommended.
+	We recommend that you review the results of the "terraform plan"
+	in the Terraform Cloud GUI before approving it.
 `

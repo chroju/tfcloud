@@ -94,14 +94,18 @@ func (c *WorkspaceUpgradeCommand) Help() string {
 }
 
 func (c *WorkspaceUpgradeCommand) Synopsis() string {
-	return "Upgrade Terraform cloud workspace terraform version"
+	return "Upgrades Terraform cloud workspace terraform version"
 }
 
 const helpMessageUpgrade = `
 Usage: tfcloud workspace upgrade [OPTION]
 
+  Upgrades Terraform cloud workspace terraform version.
+
 Notes:
   This command works by reading the remote config in the current directory.
+  You must run this command in the directory where the target terraform file resides.
+  Or you can specify the target directory with the --root-path option.
 
 Options:
   --upgrade-version, -u    Terraform version to upgrade.

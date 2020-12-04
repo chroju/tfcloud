@@ -9,7 +9,6 @@ import (
 
 type ModuleListCommand struct {
 	Command
-	format string
 }
 
 func (c *ModuleListCommand) Run(args []string) int {
@@ -64,9 +63,11 @@ func (c *ModuleListCommand) Help() string {
 }
 
 func (c *ModuleListCommand) Synopsis() string {
-	return "List all terraform cloud private modules"
+	return "Lists all terraform cloud private modules"
 }
 
 const helpModuleList = `
 Usage: tfcloud module list
+
+  Lists all terraform cloud private modules.
 `

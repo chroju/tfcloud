@@ -34,7 +34,7 @@ func (c *WorkspaceListCommand) Run(args []string) int {
 				Title:        v.Name,
 				SubTitle:     fmt.Sprintf("vcs repo: %s", v.VCSRepoName),
 				Arg:          fmt.Sprintf("https://%s/app/%s/workspaces/%s", c.Client.Address(), c.organization, v.Name),
-				Match:        v.Name,
+				Match:        strings.ReplaceAll(v.Name, "-", " "),
 				AutoComplete: v.Name,
 				UID:          v.ID,
 			}
@@ -64,9 +64,11 @@ func (c *WorkspaceListCommand) Help() string {
 }
 
 func (c *WorkspaceListCommand) Synopsis() string {
-	return "List all terraform cloud workspaces"
+	return "Lists all terraform cloud workspaces"
 }
 
 const helpWorkspaceList = `
 Usage: tfcloud workspace list <organization>
+
+  Lists all terraform cloud workspaces
 `

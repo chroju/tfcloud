@@ -47,9 +47,11 @@ func (c *ModuleVersionsCommand) Help() string {
 }
 
 func (c *ModuleVersionsCommand) Synopsis() string {
-	return "Show terraform cloud private module all versions"
+	return "Lists all terraform cloud private module versions"
 }
 
 const helpModuleVersions = `
 Usage: tfcloud module versions <organization> <provider> <module name>
+
+  Lists all terraform cloud private module versions.
 `

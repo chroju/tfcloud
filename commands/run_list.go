@@ -10,7 +10,6 @@ import (
 type RunListCommand struct {
 	Command
 	organization string
-	format       string
 }
 
 func (c *RunListCommand) Run(args []string) int {
@@ -35,7 +34,7 @@ func (c *RunListCommand) Run(args []string) int {
 				Title:        v.Workspace,
 				SubTitle:     v.CreatedAt.String(),
 				Arg:          fmt.Sprintf("https://%s/app/%s/workspaces/%s/runs/%s", c.Client.Address(), c.organization, v.Workspace, v.ID),
-				Match:        v.Workspace,
+				Match:        strings.ReplaceAll(v.Workspace, "-", " "),
 				AutoComplete: v.Workspace,
 				UID:          v.ID,
 			}
@@ -65,9 +64,11 @@ func (c *RunListCommand) Help() string {
 }
 
 func (c *RunListCommand) Synopsis() string {
-	return "List all current terraform runs"
+	return "Lists all current terraform runs in the organization."
 }
 
 const helpRunList = `
 Usage: tfcloud run list <organization>
+
+  Lists all current terraform runs in the organization.
 `

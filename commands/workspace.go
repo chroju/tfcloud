@@ -25,6 +25,6 @@ const helpWorkspace = `
 Usage: tfcloud workspace <subcommand>
 
 SubCommands:
-	list      List all terraform cloud workspaces
-	upgrade   Upgrade the terraform version of the current workspace
+	list      Lists all terraform cloud workspaces
+	upgrade   Upgrades the terraform version of the current workspace
 `

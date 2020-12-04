@@ -18,13 +18,13 @@ func (c *RunCommand) Help() string {
 }
 
 func (c *RunCommand) Synopsis() string {
-	return "about terraform runnings"
+	return "about terraform runs"
 }
 
 const helpRun = `
 Usage: tfcloud run <subcommand>
 
 SubCommands:
-	list    List all current terraform runs
-	apply   Apply terraform run which needs a confirmation
+	list    Lists all current terraform runs
+	apply   Applies a run that is paused waiting for confirmation after a plan
 `
