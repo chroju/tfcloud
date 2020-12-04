@@ -38,7 +38,7 @@ type RegistryModule struct {
 	Provider        string
 	VersionStatuses []tfe.RegistryModuleVersionStatuses
 	Organization    string
-	VCSRepo         string
+	Source          string
 }
 
 // TfCloud represents Terraform Cloud API client.
@@ -248,6 +248,7 @@ func (c *tfclient) ModuleList() ([]*RegistryModule, error) {
 			},
 			Provider:     v.Provider,
 			Organization: v.Organization.Name,
+			Source:       v.VCSRepo.Identifier,
 		}
 	}
 
@@ -266,7 +267,7 @@ func (c *tfclient) ModuleGet(organization, name, provider string) (*RegistryModu
 		Provider:        module.Provider,
 		VersionStatuses: module.VersionStatuses,
 		Organization:    module.Organization.Name,
-		VCSRepo:         module.VCSRepo.Identifier,
+		Source:          module.VCSRepo.Identifier,
 	}, nil
 }
 

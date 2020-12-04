@@ -554,6 +554,7 @@ func (s *registryModules) List(ctx context.Context, options RegistryModuleListOp
 			Name:         v.Name,
 			Provider:     v.Provider,
 			Organization: &tfe.Organization{Name: v.Namespace},
+			VCSRepo:      &tfe.VCSRepo{Identifier: v.Source},
 		}
 		items[i].VersionStatuses = append(items[i].VersionStatuses, tfe.RegistryModuleVersionStatuses{Version: v.Version})
 	}
