@@ -6,6 +6,8 @@ import (
 	"strings"
 	"text/tabwriter"
 	"time"
+
+	"github.com/chroju/tfcloud/tfc"
 )
 
 type RunListCommand struct {
@@ -20,6 +22,14 @@ func (c *RunListCommand) Run(args []string) int {
 		c.UI.Info(c.Help())
 		return 1
 	}
+
+	client, err := tfc.NewTfCloud("", "")
+	if err != nil {
+		c.UI.Error(err.Error())
+		return 1
+	}
+	c.Client = client
+
 	c.organization = args[0]
 	localTZ, _ := time.LoadLocation("Local")
 	c.localTZ = localTZ

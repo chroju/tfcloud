@@ -5,6 +5,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/chroju/tfcloud/tfc"
 	"github.com/chroju/tfcloud/tfparser"
 	"github.com/chroju/tfcloud/tfrelease"
 	version "github.com/hashicorp/go-version"
@@ -30,6 +31,13 @@ func (c *WorkspaceUpgradeCommand) Run(args []string) int {
 		c.UI.Error(err.Error())
 		return 1
 	}
+
+	client, err := tfc.NewTfCloud("", "")
+	if err != nil {
+		c.UI.Error(err.Error())
+		return 1
+	}
+	c.Client = client
 
 	remoteBackend, err := tfparser.ParseRemoteBackend(c.rootDir)
 	if err != nil {

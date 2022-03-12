@@ -5,7 +5,6 @@ import (
 	"os"
 
 	"github.com/chroju/tfcloud/commands"
-	"github.com/chroju/tfcloud/tfc"
 	"github.com/chroju/tfcloud/tfparser"
 	"github.com/mitchellh/cli"
 )
@@ -33,20 +32,9 @@ func init() {
 }
 
 func main() {
-	credential, err := initCredential()
-	if err != nil {
-		UI.Error(fmt.Sprintf("Error: %s", err))
-	}
-
-	client, err := tfc.NewTfCloud("https://"+credential.Hostname, credential.Token)
-	if err != nil {
-		UI.Error(err.Error())
-	}
-
 	format := os.Getenv("TFCLOUD_FORMAT")
 
 	command := commands.Command{
-		Client: client,
 		UI:     UI,
 		Format: format,
 	}

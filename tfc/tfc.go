@@ -2,8 +2,12 @@ package tfc
 
 import (
 	"context"
+	"fmt"
+	"os"
+	"strings"
 	"time"
 
+	"github.com/chroju/tfcloud/tfparser"
 	tfe "github.com/hashicorp/go-tfe"
 )
 
@@ -72,9 +76,9 @@ type tfclient struct {
 
 // NewTfCloud creates a new TfCloud interface
 func NewTfCloud(address, token string) (TfCloud, error) {
-	config := &tfe.Config{
-		Address: address,
-		Token:   token,
+	config, err := NewCredentials("", address, token)
+	if err != nil {
+		return nil, err
 	}
 	client, err := tfe.NewClient(config)
 	if err != nil {
@@ -92,6 +96,35 @@ func NewTfCloud(address, token string) (TfCloud, error) {
 		client,
 		registryClient,
 		ctx,
+	}, nil
+}
+
+func NewCredentials(filepath, address, token string) (*tfe.Config, error) {
+	terraformrcPath := os.Getenv("TF_CLI_CONFIG_FILE")
+	if filepath != "" {
+		terraformrcPath = filepath
+	}
+	if terraformrcPath == "" {
+		terraformrcPath = os.Getenv("HOME") + "/.terraformrc"
+	}
+
+	credential, err := tfparser.ParseTerraformrc(terraformrcPath)
+	if err != nil {
+		return nil, err
+	}
+	if address != "" {
+		credential.Hostname = address
+	}
+	if !strings.HasPrefix(credential.Hostname, "https://") {
+		credential.Hostname = fmt.Sprintf("https://%s", credential.Hostname)
+	}
+	if token != "" {
+		credential.Token = token
+	}
+
+	return &tfe.Config{
+		Address: credential.Hostname,
+		Token:   credential.Token,
 	}, nil
 }
 

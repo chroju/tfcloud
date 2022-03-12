@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"strings"
 	"text/tabwriter"
+
+	"github.com/chroju/tfcloud/tfc"
 )
 
 type WorkspaceListCommand struct {
@@ -19,6 +21,13 @@ func (c *WorkspaceListCommand) Run(args []string) int {
 		return 1
 	}
 	c.organization = args[0]
+
+	client, err := tfc.NewTfCloud("", "")
+	if err != nil {
+		c.UI.Error(err.Error())
+		return 1
+	}
+	c.Client = client
 
 	wslist, err := c.Client.WorkspaceList(c.organization)
 	if err != nil {

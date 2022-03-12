@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"strings"
 	"text/tabwriter"
+
+	"github.com/chroju/tfcloud/tfc"
 )
 
 type ModuleListCommand struct {
@@ -17,6 +19,13 @@ func (c *ModuleListCommand) Run(args []string) int {
 		c.UI.Info(c.Help())
 		return 1
 	}
+
+	client, err := tfc.NewTfCloud("", "")
+	if err != nil {
+		c.UI.Error(err.Error())
+		return 1
+	}
+	c.Client = client
 
 	mdlist, err := c.Client.ModuleList()
 	if err != nil {

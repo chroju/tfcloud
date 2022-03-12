@@ -3,6 +3,8 @@ package commands
 import (
 	"fmt"
 	"strings"
+
+	"github.com/chroju/tfcloud/tfc"
 )
 
 type RunApplyCommand struct {
@@ -11,6 +13,13 @@ type RunApplyCommand struct {
 }
 
 func (c *RunApplyCommand) Run(args []string) int {
+	client, err := tfc.NewTfCloud("", "")
+	if err != nil {
+		c.UI.Error(err.Error())
+		return 1
+	}
+	c.Client = client
+
 	if len(args) != 3 {
 		c.UI.Error("Arguments are not valid.")
 		c.UI.Info(c.Help())

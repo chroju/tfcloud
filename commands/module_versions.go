@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"strings"
 	"text/tabwriter"
+
+	"github.com/chroju/tfcloud/tfc"
 )
 
 type ModuleVersionsCommand struct {
@@ -23,6 +25,13 @@ func (c *ModuleVersionsCommand) Run(args []string) int {
 	c.organization = args[0]
 	c.provider = args[1]
 	c.name = args[2]
+
+	client, err := tfc.NewTfCloud("", "")
+	if err != nil {
+		c.UI.Error(err.Error())
+		return 1
+	}
+	c.Client = client
 
 	result, err := c.Client.ModuleGet(c.organization, c.name, c.provider)
 	if err != nil {
