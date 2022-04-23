@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"strings"
 	"text/tabwriter"
+
+	"github.com/chroju/tfcloud/tfc"
 )
 
 type WorkspaceListCommand struct {
@@ -20,6 +22,13 @@ func (c *WorkspaceListCommand) Run(args []string) int {
 	}
 	c.organization = args[0]
 
+	client, err := tfc.NewTfCloud("", "")
+	if err != nil {
+		c.UI.Error(err.Error())
+		return 1
+	}
+	c.Client = client
+
 	wslist, err := c.Client.WorkspaceList(c.organization)
 	if err != nil {
 		c.UI.Error(err.Error())
@@ -31,12 +40,12 @@ func (c *WorkspaceListCommand) Run(args []string) int {
 		alfredItems := make([]AlfredFormatItem, len(wslist))
 		for i, v := range wslist {
 			alfredItems[i] = AlfredFormatItem{
-				Title:        v.Name,
-				SubTitle:     fmt.Sprintf("vcs repo: %s", v.VCSRepoName),
-				Arg:          fmt.Sprintf("%s/app/%s/workspaces/%s", c.Client.Address(), c.organization, v.Name),
-				Match:        strings.ReplaceAll(v.Name, "-", " "),
-				AutoComplete: v.Name,
-				UID:          v.ID,
+				Title:        *v.Name,
+				SubTitle:     fmt.Sprintf("vcs repo: %s", *v.VCSRepoName),
+				Arg:          fmt.Sprintf("%s/app/%s/workspaces/%s", c.Client.Address(), c.organization, *v.Name),
+				Match:        strings.ReplaceAll(*v.Name, "-", " "),
+				AutoComplete: *v.Name,
+				UID:          *v.ID,
 			}
 		}
 		out, err := AlfredFormatOutput(alfredItems, "No workspaces found")
@@ -50,8 +59,8 @@ func (c *WorkspaceListCommand) Run(args []string) int {
 		w := tabwriter.NewWriter(out, 0, 4, 2, ' ', 0)
 		fmt.Fprintln(w, "NAME\tVERSION\tLINK")
 		for _, v := range wslist {
-			fmt.Fprintf(w, "%s\t%s\thttps://%s/app/%s/workspaces/%s\n",
-				v.Name, v.TerraformVersion, c.Client.Address(), c.organization, v.Name)
+			fmt.Fprintf(w, "%s\t%s\t%s/app/%s/workspaces/%s\n",
+				*v.Name, *v.TerraformVersion, c.Client.Address(), c.organization, *v.Name)
 		}
 		w.Flush()
 		c.UI.Output(out.String())

@@ -5,14 +5,13 @@ import (
 	"os"
 
 	"github.com/chroju/tfcloud/commands"
-	"github.com/chroju/tfcloud/tfc"
 	"github.com/chroju/tfcloud/tfparser"
 	"github.com/mitchellh/cli"
 )
 
 const (
 	app     = "tfcloud"
-	version = "0.1.0"
+	version = "0.2.0"
 )
 
 var (
@@ -33,20 +32,9 @@ func init() {
 }
 
 func main() {
-	credential, err := initCredential()
-	if err != nil {
-		UI.Error(fmt.Sprintf("Error: %s", err))
-	}
-
-	client, err := tfc.NewTfCloud("https://"+credential.Hostname, credential.Token)
-	if err != nil {
-		UI.Error(err.Error())
-	}
-
 	format := os.Getenv("TFCLOUD_FORMAT")
 
 	command := commands.Command{
-		Client: client,
 		UI:     UI,
 		Format: format,
 	}
@@ -71,6 +59,9 @@ func main() {
 		},
 		"workspace upgrade": func() (cli.Command, error) {
 			return &commands.WorkspaceUpgradeCommand{Command: command}, nil
+		},
+		"workspace view": func() (cli.Command, error) {
+			return &commands.WorkspaceViewCommand{Command: command}, nil
 		},
 		"module": func() (cli.Command, error) {
 			return &commands.ModuleCommand{Command: command}, nil

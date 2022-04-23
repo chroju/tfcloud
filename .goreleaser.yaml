@@ -1,0 +1,44 @@
+env:
+  - GO111MODULE=on
+before:
+  hooks:
+    - go mod tidy
+builds:
+  - env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - 386
+      - amd64
+      - arm64
+archives:
+  - replacements:
+      darwin: Darwin
+      linux: Linux
+      windows: Windows
+      386: i386
+      amd64: x86_64
+    format_overrides:
+      - goos: windows
+        format: zip
+    files:
+      - none*
+changelog:
+  skip: true
+brews:
+  - name: tfcloud
+    tap:
+      owner: chroju
+      name: homebrew-tap
+      token:
+    url_template: "https://github.com/chroju/tfcloud/releases/download/{{ .Tag }}/{{ .ArtifactName }}"
+    description: "Terraform Cloud CLI tool"
+    homepage: "https://github.com/chroju/tfcloud"
+    license: "MIT"
+    test: |
+      system "#{bin}/tfcloud --version"
+    install: |
+      bin.install "tfcloud"

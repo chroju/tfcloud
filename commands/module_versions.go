@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"strings"
 	"text/tabwriter"
+
+	"github.com/chroju/tfcloud/tfc"
 )
 
 type ModuleVersionsCommand struct {
@@ -24,6 +26,13 @@ func (c *ModuleVersionsCommand) Run(args []string) int {
 	c.provider = args[1]
 	c.name = args[2]
 
+	client, err := tfc.NewTfCloud("", "")
+	if err != nil {
+		c.UI.Error(err.Error())
+		return 1
+	}
+	c.Client = client
+
 	result, err := c.Client.ModuleGet(c.organization, c.name, c.provider)
 	if err != nil {
 		c.UI.Error(err.Error())
@@ -34,7 +43,7 @@ func (c *ModuleVersionsCommand) Run(args []string) int {
 	w := tabwriter.NewWriter(out, 0, 4, 1, ' ', 0)
 	fmt.Fprintln(w, "VERSION\tSTATUS\tLINK")
 	for _, v := range result.VersionStatuses {
-		fmt.Fprintf(w, "%s\t%s\thttps://%s/app/%s/modules/view/%s/%s/%s\n",
+		fmt.Fprintf(w, "%s\t%s\t%s/app/%s/modules/view/%s/%s/%s\n",
 			v.Version, v.Status, c.Client.Address(), c.organization, c.name, c.provider, v.Version)
 	}
 	w.Flush()

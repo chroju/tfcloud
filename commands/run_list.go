@@ -6,6 +6,8 @@ import (
 	"strings"
 	"text/tabwriter"
 	"time"
+
+	"github.com/chroju/tfcloud/tfc"
 )
 
 type RunListCommand struct {
@@ -20,6 +22,14 @@ func (c *RunListCommand) Run(args []string) int {
 		c.UI.Info(c.Help())
 		return 1
 	}
+
+	client, err := tfc.NewTfCloud("", "")
+	if err != nil {
+		c.UI.Error(err.Error())
+		return 1
+	}
+	c.Client = client
+
 	c.organization = args[0]
 	localTZ, _ := time.LoadLocation("Local")
 	c.localTZ = localTZ
@@ -36,12 +46,12 @@ func (c *RunListCommand) Run(args []string) int {
 		for i, v := range runlist {
 			localtime := v.CreatedAt.In(c.localTZ)
 			alfredItems[i] = AlfredFormatItem{
-				Title:        v.Workspace,
-				SubTitle:     fmt.Sprintf("%s / %s", v.Status, localtime),
-				Arg:          fmt.Sprintf("%s/app/%s/workspaces/%s/runs/%s", c.Client.Address(), c.organization, v.Workspace, v.ID),
-				Match:        strings.ReplaceAll(v.Workspace, "-", " "),
-				AutoComplete: v.Workspace,
-				UID:          v.ID,
+				Title:        *v.Workspace,
+				SubTitle:     fmt.Sprintf("%s / %s", *v.Status, localtime),
+				Arg:          fmt.Sprintf("%s/app/%s/workspaces/%s/runs/%s", c.Client.Address(), c.organization, *v.Workspace, *v.ID),
+				Match:        strings.ReplaceAll(*v.Workspace, "-", " "),
+				AutoComplete: *v.Workspace,
+				UID:          *v.ID,
 			}
 		}
 		out, err := AlfredFormatOutput(alfredItems, "No runs found")
@@ -55,8 +65,8 @@ func (c *RunListCommand) Run(args []string) int {
 		w := tabwriter.NewWriter(out, 0, 4, 1, ' ', 0)
 		fmt.Fprintln(w, "WORKSPACE\tSTATUS\tNEEDS CONFIRM\tLINK")
 		for _, r := range runlist {
-			fmt.Fprintf(w, "%s\t%s\t%v\thttps://%s/app/%s/workspaces/%s/runs/%s\n",
-				r.Workspace, r.Status, r.IsConfirmable, c.Client.Address(), c.organization, r.Workspace, r.ID)
+			fmt.Fprintf(w, "%s\t%s\t%v\t%s/app/%s/workspaces/%s/runs/%s\n",
+				*r.Workspace, *r.Status, *r.IsConfirmable, c.Client.Address(), c.organization, *r.Workspace, *r.ID)
 		}
 		w.Flush()
 		c.UI.Output(out.String())

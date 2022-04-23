@@ -2,8 +2,12 @@ package tfc
 
 import (
 	"context"
+	"fmt"
+	"os"
+	"strings"
 	"time"
 
+	"github.com/chroju/tfcloud/tfparser"
 	tfe "github.com/hashicorp/go-tfe"
 )
 
@@ -14,31 +18,37 @@ var defaultListOptions = &tfe.ListOptions{
 
 // Run represents a Terraform workspaces run.
 type Run struct {
-	ID            string
-	Organization  string
-	Workspace     string
-	Status        string
-	IsConfirmable bool
+	ID            *string
+	Organization  *string
+	Workspace     *string
+	Status        *string
+	IsConfirmable *bool
 	CreatedAt     time.Time
 }
 
 // Workspace represents a Terraform Cloud workspace.
 type Workspace struct {
-	ID               string
-	Name             string
-	TerraformVersion string
+	ID               *string
+	Name             *string
+	TerraformVersion *string
+	ExecutionMode    *string
+	AutoApply        *bool
 	CurrentRun       *tfe.Run
-	VCSRepoName      string
+	VCSRepoName      *string
+	WorkingDirectory *string
+	ResourceCount    *int
+	CreatedAt        time.Time
+	UpdatedAt        time.Time
 }
 
 // RegistryModule represents a Terraform Cloud registry module.
 type RegistryModule struct {
-	ID              string
-	Name            string
-	Provider        string
+	ID              *string
+	Name            *string
+	Provider        *string
 	VersionStatuses []tfe.RegistryModuleVersionStatuses
-	Organization    string
-	Source          string
+	Organization    *string
+	Source          *string
 }
 
 // TfCloud represents Terraform Cloud API client.
@@ -58,40 +68,63 @@ type TfCloud interface {
 	// WorkspaceUpdateVersion updates the terraform version config in the specified workspace.
 	WorkspaceUpdateVersion(organization, workspace, version string) error
 	// ModuleList returns all the terraform registry modules.
-	ModuleList() ([]*RegistryModule, error)
+	ModuleList(organization string) ([]*RegistryModule, error)
 	// ModuleGet returns the specified terraform registry module.
 	ModuleGet(organization, name, provider string) (*RegistryModule, error)
 }
 
 type tfclient struct {
-	address        string
-	client         *tfe.Client
-	registryClient *RegistryClient
-	ctx            context.Context
+	address string
+	client  *Client
+	ctx     context.Context
 }
 
 // NewTfCloud creates a new TfCloud interface
 func NewTfCloud(address, token string) (TfCloud, error) {
-	config := &tfe.Config{
-		Address: address,
-		Token:   token,
-	}
-	client, err := tfe.NewClient(config)
+	config, err := NewCredentials("", address, token)
 	if err != nil {
 		return nil, err
 	}
 
-	registryClient, err := NewRegistryClient(config)
+	client, err := NewClient(config)
 	if err != nil {
 		return nil, err
 	}
 
 	ctx := context.Background()
 	return &tfclient{
-		address,
-		client,
-		registryClient,
-		ctx,
+		address: config.Address,
+		client:  client,
+		ctx:     ctx,
+	}, nil
+}
+
+func NewCredentials(filepath, address, token string) (*tfe.Config, error) {
+	terraformrcPath := os.Getenv("TF_CLI_CONFIG_FILE")
+	if filepath != "" {
+		terraformrcPath = filepath
+	}
+	if terraformrcPath == "" {
+		terraformrcPath = os.Getenv("HOME") + "/.terraformrc"
+	}
+
+	credential, err := tfparser.ParseTerraformrc(terraformrcPath)
+	if err != nil {
+		return nil, err
+	}
+	if address != "" {
+		credential.Hostname = address
+	}
+	if !strings.HasPrefix(credential.Hostname, "https://") {
+		credential.Hostname = fmt.Sprintf("https://%s", credential.Hostname)
+	}
+	if token != "" {
+		credential.Token = token
+	}
+
+	return &tfe.Config{
+		Address: credential.Hostname,
+		Token:   credential.Token,
 	}, nil
 }
 
@@ -116,7 +149,7 @@ func (c *tfclient) RunList(organization string) ([]*Run, error) {
 			if ws.CurrentRun == nil {
 				resultChan <- result{Error: nil, Response: nil}
 			} else {
-				run, err := c.RunGet(ws.Name, ws.CurrentRun.ID)
+				run, err := c.RunGet(*ws.Name, ws.CurrentRun.ID)
 				resultChan <- result{Error: err, Response: run}
 			}
 		}(ws)
@@ -147,11 +180,11 @@ func (c *tfclient) RunGet(workspaceName, runID string) (*Run, error) {
 	}
 
 	return &Run{
-		ID:            run.ID,
-		Status:        string(run.Status),
-		Workspace:     workspaceName,
+		ID:            &run.ID,
+		Status:        tfe.String(string(run.Status)),
+		Workspace:     &workspaceName,
 		CreatedAt:     run.CreatedAt,
-		IsConfirmable: run.Actions.IsConfirmable,
+		IsConfirmable: &run.Actions.IsConfirmable,
 	}, nil
 }
 
@@ -170,12 +203,12 @@ func (c *tfclient) RunApply(runID string) error {
 func (c *tfclient) WorkspaceList(organization string) ([]*Workspace, error) {
 	wlo := &tfe.WorkspaceListOptions{
 		ListOptions: *defaultListOptions,
-		Search:      nil,
+		Search:      "",
 	}
 
 	var workspaces []*tfe.Workspace
 	for {
-		wslist, err := c.client.Workspaces.List(c.ctx, organization, *wlo)
+		wslist, err := c.client.Workspaces.List(c.ctx, organization, wlo)
 		if err != nil {
 			return nil, err
 		}
@@ -193,11 +226,17 @@ func (c *tfclient) WorkspaceList(organization string) ([]*Workspace, error) {
 			vcsRepoName = v.VCSRepo.Identifier
 		}
 		result[i] = &Workspace{
-			ID:               v.ID,
-			Name:             v.Name,
-			TerraformVersion: v.TerraformVersion,
+			ID:               &v.ID,
+			Name:             &v.Name,
+			TerraformVersion: &v.TerraformVersion,
+			ExecutionMode:    &v.ExecutionMode,
+			AutoApply:        &v.AutoApply,
 			CurrentRun:       v.CurrentRun,
-			VCSRepoName:      vcsRepoName,
+			VCSRepoName:      &vcsRepoName,
+			WorkingDirectory: &v.WorkingDirectory,
+			ResourceCount:    &v.ResourceCount,
+			CreatedAt:        v.CreatedAt,
+			UpdatedAt:        v.UpdatedAt,
 		}
 	}
 
@@ -211,10 +250,17 @@ func (c *tfclient) WorkspaceGet(organization, workspace string) (*Workspace, err
 	}
 
 	return &Workspace{
-		ID:               ws.ID,
-		Name:             ws.Name,
-		TerraformVersion: ws.TerraformVersion,
+		ID:               &ws.ID,
+		Name:             &ws.Name,
+		TerraformVersion: &ws.TerraformVersion,
+		ExecutionMode:    &ws.ExecutionMode,
+		AutoApply:        &ws.AutoApply,
 		CurrentRun:       ws.CurrentRun,
+		VCSRepoName:      &ws.VCSRepo.Identifier,
+		WorkingDirectory: &ws.WorkingDirectory,
+		ResourceCount:    &ws.ResourceCount,
+		CreatedAt:        ws.CreatedAt,
+		UpdatedAt:        ws.UpdatedAt,
 	}, nil
 }
 
@@ -226,12 +272,12 @@ func (c *tfclient) WorkspaceUpdateVersion(organization, workspace, version strin
 	return err
 }
 
-func (c *tfclient) ModuleList() ([]*RegistryModule, error) {
+func (c *tfclient) ModuleList(organization string) ([]*RegistryModule, error) {
 	mlo := &RegistryModuleListOptions{
-		Limit: 100,
+		ListOptions: *defaultListOptions,
 	}
 
-	modulelist, err := c.registryClient.RegistryModules.List(c.ctx, *mlo)
+	modulelist, err := c.client.TfcRegistryModules.List(c.ctx, organization, mlo)
 	if err != nil {
 		return nil, err
 	}
@@ -239,16 +285,16 @@ func (c *tfclient) ModuleList() ([]*RegistryModule, error) {
 	result := make([]*RegistryModule, len(modulelist.Items))
 	for i, v := range modulelist.Items {
 		result[i] = &RegistryModule{
-			ID:   v.ID,
-			Name: v.Name,
+			ID:   &v.ID,
+			Name: &v.Name,
 			VersionStatuses: []tfe.RegistryModuleVersionStatuses{
 				{
 					Version: v.VersionStatuses[0].Version,
 				},
 			},
-			Provider:     v.Provider,
-			Organization: v.Organization.Name,
-			Source:       v.VCSRepo.Identifier,
+			Provider:     &v.Provider,
+			Organization: &v.Organization.Name,
+			Source:       &v.VCSRepo.Identifier,
 		}
 	}
 
@@ -256,18 +302,23 @@ func (c *tfclient) ModuleList() ([]*RegistryModule, error) {
 }
 
 func (c *tfclient) ModuleGet(organization, name, provider string) (*RegistryModule, error) {
-	module, err := c.client.RegistryModules.Read(c.ctx, organization, name, provider)
+	moduleID := tfe.RegistryModuleID{
+		Organization: organization,
+		Name:         name,
+		Provider:     provider,
+	}
+	module, err := c.client.RegistryModules.Read(c.ctx, moduleID)
 	if err != nil {
 		return nil, err
 	}
 
 	return &RegistryModule{
-		ID:              module.ID,
-		Name:            module.Name,
-		Provider:        module.Provider,
+		ID:              &module.ID,
+		Name:            &module.Name,
+		Provider:        &module.Provider,
 		VersionStatuses: module.VersionStatuses,
-		Organization:    module.Organization.Name,
-		Source:          module.VCSRepo.Identifier,
+		Organization:    &module.Organization.Name,
+		Source:          &module.VCSRepo.Identifier,
 	}, nil
 }
 

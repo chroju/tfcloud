@@ -5,6 +5,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/chroju/tfcloud/tfc"
 	"github.com/chroju/tfcloud/tfparser"
 	"github.com/chroju/tfcloud/tfrelease"
 	version "github.com/hashicorp/go-version"
@@ -30,6 +31,13 @@ func (c *WorkspaceUpgradeCommand) Run(args []string) int {
 		c.UI.Error(err.Error())
 		return 1
 	}
+
+	client, err := tfc.NewTfCloud("", "")
+	if err != nil {
+		c.UI.Error(err.Error())
+		return 1
+	}
+	c.Client = client
 
 	remoteBackend, err := tfparser.ParseRemoteBackend(c.rootDir)
 	if err != nil {
@@ -65,13 +73,13 @@ func (c *WorkspaceUpgradeCommand) Run(args []string) int {
 		return 1
 	}
 
-	if ws.TerraformVersion == c.version.String() {
+	if *ws.TerraformVersion == c.version.String() {
 		c.UI.Warn(fmt.Sprintf("Version %s is already set up.", c.version.String()))
 		return 0
 	}
 
 	if !c.autoApprove {
-		if yn, err := askForConfirmation(fmt.Sprintf("Upgrade: %s -> %s\n ?", ws.TerraformVersion, c.version)); err != nil {
+		if yn, err := askForConfirmation(fmt.Sprintf("Upgrade: %s -> %s\n ?", *ws.TerraformVersion, c.version)); err != nil {
 			c.UI.Error(err.Error())
 			return 2
 		} else if !yn {
