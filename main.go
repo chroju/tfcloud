@@ -60,6 +60,9 @@ func main() {
 		"workspace upgrade": func() (cli.Command, error) {
 			return &commands.WorkspaceUpgradeCommand{Command: command}, nil
 		},
+		"workspace view": func() (cli.Command, error) {
+			return &commands.WorkspaceViewCommand{Command: command}, nil
+		},
 		"module": func() (cli.Command, error) {
 			return &commands.ModuleCommand{Command: command}, nil
 		},

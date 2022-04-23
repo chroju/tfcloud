@@ -31,8 +31,14 @@ type Workspace struct {
 	ID               *string
 	Name             *string
 	TerraformVersion *string
+	ExecutionMode    *string
+	AutoApply        *bool
 	CurrentRun       *tfe.Run
 	VCSRepoName      *string
+	WorkingDirectory *string
+	ResourceCount    *int
+	CreatedAt        time.Time
+	UpdatedAt        time.Time
 }
 
 // RegistryModule represents a Terraform Cloud registry module.
@@ -223,8 +229,14 @@ func (c *tfclient) WorkspaceList(organization string) ([]*Workspace, error) {
 			ID:               &v.ID,
 			Name:             &v.Name,
 			TerraformVersion: &v.TerraformVersion,
+			ExecutionMode:    &v.ExecutionMode,
+			AutoApply:        &v.AutoApply,
 			CurrentRun:       v.CurrentRun,
 			VCSRepoName:      &vcsRepoName,
+			WorkingDirectory: &v.WorkingDirectory,
+			ResourceCount:    &v.ResourceCount,
+			CreatedAt:        v.CreatedAt,
+			UpdatedAt:        v.UpdatedAt,
 		}
 	}
 
@@ -241,7 +253,14 @@ func (c *tfclient) WorkspaceGet(organization, workspace string) (*Workspace, err
 		ID:               &ws.ID,
 		Name:             &ws.Name,
 		TerraformVersion: &ws.TerraformVersion,
+		ExecutionMode:    &ws.ExecutionMode,
+		AutoApply:        &ws.AutoApply,
 		CurrentRun:       ws.CurrentRun,
+		VCSRepoName:      &ws.VCSRepo.Identifier,
+		WorkingDirectory: &ws.WorkingDirectory,
+		ResourceCount:    &ws.ResourceCount,
+		CreatedAt:        ws.CreatedAt,
+		UpdatedAt:        ws.UpdatedAt,
 	}, nil
 }
 

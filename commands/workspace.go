@@ -27,4 +27,5 @@ Usage: tfcloud workspace <subcommand>
 SubCommands:
 	list      Lists all terraform cloud workspaces
 	upgrade   Upgrades the terraform version of the current workspace
+	view      Views Terraform cloud workspace details
 `
