@@ -40,12 +40,12 @@ func (c *ModuleListCommand) Run(args []string) int {
 		alfredItems := make([]AlfredFormatItem, len(mdlist))
 		for i, v := range mdlist {
 			alfredItems[i] = AlfredFormatItem{
-				Title:        v.ID,
-				SubTitle:     fmt.Sprintf("source: %s", v.Source),
-				Arg:          fmt.Sprintf("%s/app/%s/modules/view/%s/%s/%s", c.Client.Address(), v.Organization, v.Name, v.Provider, v.VersionStatuses[0].Version),
-				Match:        v.Name,
-				AutoComplete: v.Name,
-				UID:          v.ID,
+				Title:        *v.ID,
+				SubTitle:     fmt.Sprintf("source: %s", *v.Source),
+				Arg:          fmt.Sprintf("%s/app/%s/modules/view/%s/%s/%s", c.Client.Address(), *v.Organization, *v.Name, *v.Provider, v.VersionStatuses[0].Version),
+				Match:        *v.Name,
+				AutoComplete: *v.Name,
+				UID:          *v.ID,
 			}
 		}
 		out, err := AlfredFormatOutput(alfredItems, "No modules found")
@@ -61,7 +61,7 @@ func (c *ModuleListCommand) Run(args []string) int {
 		for _, r := range mdlist {
 			latest := r.VersionStatuses[0].Version
 			fmt.Fprintf(w, "%s\t%s\thttps://%s/app/%s/modules/view/%s/%s/%s\n",
-				r.Name, latest, c.Client.Address(), r.Organization, r.Name, r.Provider, latest)
+				*r.Name, latest, c.Client.Address(), *r.Organization, *r.Name, *r.Provider, latest)
 		}
 		w.Flush()
 		c.UI.Output(out.String())

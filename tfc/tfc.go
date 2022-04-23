@@ -18,31 +18,31 @@ var defaultListOptions = &tfe.ListOptions{
 
 // Run represents a Terraform workspaces run.
 type Run struct {
-	ID            string
-	Organization  string
-	Workspace     string
-	Status        string
-	IsConfirmable bool
+	ID            *string
+	Organization  *string
+	Workspace     *string
+	Status        *string
+	IsConfirmable *bool
 	CreatedAt     time.Time
 }
 
 // Workspace represents a Terraform Cloud workspace.
 type Workspace struct {
-	ID               string
-	Name             string
-	TerraformVersion string
+	ID               *string
+	Name             *string
+	TerraformVersion *string
 	CurrentRun       *tfe.Run
-	VCSRepoName      string
+	VCSRepoName      *string
 }
 
 // RegistryModule represents a Terraform Cloud registry module.
 type RegistryModule struct {
-	ID              string
-	Name            string
-	Provider        string
+	ID              *string
+	Name            *string
+	Provider        *string
 	VersionStatuses []tfe.RegistryModuleVersionStatuses
-	Organization    string
-	Source          string
+	Organization    *string
+	Source          *string
 }
 
 // TfCloud represents Terraform Cloud API client.
@@ -143,7 +143,7 @@ func (c *tfclient) RunList(organization string) ([]*Run, error) {
 			if ws.CurrentRun == nil {
 				resultChan <- result{Error: nil, Response: nil}
 			} else {
-				run, err := c.RunGet(ws.Name, ws.CurrentRun.ID)
+				run, err := c.RunGet(*ws.Name, ws.CurrentRun.ID)
 				resultChan <- result{Error: err, Response: run}
 			}
 		}(ws)
@@ -174,11 +174,11 @@ func (c *tfclient) RunGet(workspaceName, runID string) (*Run, error) {
 	}
 
 	return &Run{
-		ID:            run.ID,
-		Status:        string(run.Status),
-		Workspace:     workspaceName,
+		ID:            &run.ID,
+		Status:        tfe.String(string(run.Status)),
+		Workspace:     &workspaceName,
 		CreatedAt:     run.CreatedAt,
-		IsConfirmable: run.Actions.IsConfirmable,
+		IsConfirmable: &run.Actions.IsConfirmable,
 	}, nil
 }
 
@@ -220,11 +220,11 @@ func (c *tfclient) WorkspaceList(organization string) ([]*Workspace, error) {
 			vcsRepoName = v.VCSRepo.Identifier
 		}
 		result[i] = &Workspace{
-			ID:               v.ID,
-			Name:             v.Name,
-			TerraformVersion: v.TerraformVersion,
+			ID:               &v.ID,
+			Name:             &v.Name,
+			TerraformVersion: &v.TerraformVersion,
 			CurrentRun:       v.CurrentRun,
-			VCSRepoName:      vcsRepoName,
+			VCSRepoName:      &vcsRepoName,
 		}
 	}
 
@@ -238,9 +238,9 @@ func (c *tfclient) WorkspaceGet(organization, workspace string) (*Workspace, err
 	}
 
 	return &Workspace{
-		ID:               ws.ID,
-		Name:             ws.Name,
-		TerraformVersion: ws.TerraformVersion,
+		ID:               &ws.ID,
+		Name:             &ws.Name,
+		TerraformVersion: &ws.TerraformVersion,
 		CurrentRun:       ws.CurrentRun,
 	}, nil
 }
@@ -255,9 +255,7 @@ func (c *tfclient) WorkspaceUpdateVersion(organization, workspace, version strin
 
 func (c *tfclient) ModuleList(organization string) ([]*RegistryModule, error) {
 	mlo := &RegistryModuleListOptions{
-		ListOptions: tfe.ListOptions{
-			PageSize: 100,
-		},
+		ListOptions: *defaultListOptions,
 	}
 
 	modulelist, err := c.client.TfcRegistryModules.List(c.ctx, organization, mlo)
@@ -268,16 +266,16 @@ func (c *tfclient) ModuleList(organization string) ([]*RegistryModule, error) {
 	result := make([]*RegistryModule, len(modulelist.Items))
 	for i, v := range modulelist.Items {
 		result[i] = &RegistryModule{
-			ID:   v.ID,
-			Name: v.Name,
+			ID:   &v.ID,
+			Name: &v.Name,
 			VersionStatuses: []tfe.RegistryModuleVersionStatuses{
 				{
 					Version: v.VersionStatuses[0].Version,
 				},
 			},
-			Provider:     v.Provider,
-			Organization: v.Organization.Name,
-			Source:       v.VCSRepo.Identifier,
+			Provider:     &v.Provider,
+			Organization: &v.Organization.Name,
+			Source:       &v.VCSRepo.Identifier,
 		}
 	}
 
@@ -296,12 +294,12 @@ func (c *tfclient) ModuleGet(organization, name, provider string) (*RegistryModu
 	}
 
 	return &RegistryModule{
-		ID:              module.ID,
-		Name:            module.Name,
-		Provider:        module.Provider,
+		ID:              &module.ID,
+		Name:            &module.Name,
+		Provider:        &module.Provider,
 		VersionStatuses: module.VersionStatuses,
-		Organization:    module.Organization.Name,
-		Source:          module.VCSRepo.Identifier,
+		Organization:    &module.Organization.Name,
+		Source:          &module.VCSRepo.Identifier,
 	}, nil
 }
 

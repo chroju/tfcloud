@@ -46,12 +46,12 @@ func (c *RunListCommand) Run(args []string) int {
 		for i, v := range runlist {
 			localtime := v.CreatedAt.In(c.localTZ)
 			alfredItems[i] = AlfredFormatItem{
-				Title:        v.Workspace,
-				SubTitle:     fmt.Sprintf("%s / %s", v.Status, localtime),
-				Arg:          fmt.Sprintf("%s/app/%s/workspaces/%s/runs/%s", c.Client.Address(), c.organization, v.Workspace, v.ID),
-				Match:        strings.ReplaceAll(v.Workspace, "-", " "),
-				AutoComplete: v.Workspace,
-				UID:          v.ID,
+				Title:        *v.Workspace,
+				SubTitle:     fmt.Sprintf("%s / %s", *v.Status, localtime),
+				Arg:          fmt.Sprintf("%s/app/%s/workspaces/%s/runs/%s", c.Client.Address(), c.organization, *v.Workspace, *v.ID),
+				Match:        strings.ReplaceAll(*v.Workspace, "-", " "),
+				AutoComplete: *v.Workspace,
+				UID:          *v.ID,
 			}
 		}
 		out, err := AlfredFormatOutput(alfredItems, "No runs found")
@@ -66,7 +66,7 @@ func (c *RunListCommand) Run(args []string) int {
 		fmt.Fprintln(w, "WORKSPACE\tSTATUS\tNEEDS CONFIRM\tLINK")
 		for _, r := range runlist {
 			fmt.Fprintf(w, "%s\t%s\t%v\thttps://%s/app/%s/workspaces/%s/runs/%s\n",
-				r.Workspace, r.Status, r.IsConfirmable, c.Client.Address(), c.organization, r.Workspace, r.ID)
+				*r.Workspace, *r.Status, *r.IsConfirmable, c.Client.Address(), c.organization, *r.Workspace, *r.ID)
 		}
 		w.Flush()
 		c.UI.Output(out.String())
