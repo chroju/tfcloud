@@ -3,9 +3,7 @@ package tfparser
 import (
 	"fmt"
 	"io/ioutil"
-	"os"
 	"path/filepath"
-	"strings"
 
 	version "github.com/hashicorp/go-version"
 	hcl "github.com/hashicorp/hcl/v2"
@@ -58,54 +56,49 @@ func parseTerraformrcConfig(configFile *hcl.File) (*Credential, error) {
 // ParseRemoteBackend parses remote backend config in the specified directory and returns values.
 func ParseRemoteBackend(root string) (*RemoteBackend, error) {
 	var config *RemoteBackend
-	err := filepath.Walk(root,
-		func(path string, info os.FileInfo, err error) error {
-			if err != nil {
-				return err
-			}
+	paths, err := filepath.Glob(fmt.Sprintf("%s/*.tf", root))
+	if err != nil {
+		return nil, err
+	}
 
-			if info.IsDir() || !strings.HasSuffix(info.Name(), ".tf") {
-				return nil
-			}
+	for _, path := range paths {
+		src, err := ioutil.ReadFile(path)
+		if err != nil {
+			continue
+		}
 
-			src, err := ioutil.ReadFile(path)
-			if err != nil {
-				return err
-			}
+		file, diags := hclwrite.ParseConfig(src, path, hcl.InitialPos)
+		if diags.HasErrors() {
+			continue
+		}
 
-			file, diags := hclwrite.ParseConfig(src, path, hcl.InitialPos)
-			if diags.HasErrors() {
-				return diags
-			}
+		var cfg *RemoteBackend
+		for _, block := range file.Body().Blocks() {
+			if block.Type() == "terraform" {
+				for _, subBlock := range block.Body().Blocks() {
+					if subBlock.Type() == "backend" && subBlock.Labels()[0] == "remote" {
+						subBlockBody := subBlock.Body()
 
-			for _, block := range file.Body().Blocks() {
-				if block.Type() == "terraform" {
-					for _, subBlock := range block.Body().Blocks() {
-						if subBlock.Type() == "backend" && subBlock.Labels()[0] == "remote" {
-							subBlockBody := subBlock.Body()
+						requiredVersion, err := parseRequiredVersion(block.Body().GetAttribute("required_version"))
+						if err != nil {
+							continue
+						}
 
-							requiredVersion, err := parseRequiredVersion(block.Body().GetAttribute("required_version"))
-							if err != nil {
-								return err
-							}
-
-							config = &RemoteBackend{
-								Organization:    parseAttribute(subBlockBody.GetAttribute("organization")),
-								Hostname:        parseAttribute(subBlockBody.GetAttribute("hostname")),
-								WorkspaceName:   parseAttribute(subBlockBody.Blocks()[0].Body().GetAttribute("name")),
-								WorkspacePrefix: parseAttribute(subBlockBody.Blocks()[0].Body().GetAttribute("prefix")),
-								RequiredVersion: requiredVersion,
-							}
-							return nil
+						cfg = &RemoteBackend{
+							Organization:    parseAttribute(subBlockBody.GetAttribute("organization")),
+							Hostname:        parseAttribute(subBlockBody.GetAttribute("hostname")),
+							WorkspaceName:   parseAttribute(subBlockBody.Blocks()[0].Body().GetAttribute("name")),
+							WorkspacePrefix: parseAttribute(subBlockBody.Blocks()[0].Body().GetAttribute("prefix")),
+							RequiredVersion: requiredVersion,
 						}
 					}
 				}
 			}
-			return nil
-		})
-
-	if err != nil {
-		return nil, err
+		}
+		if config != nil {
+			return nil, fmt.Errorf("Remote backend config is duplicated")
+		}
+		config = cfg
 	}
 
 	if config == nil {
