@@ -1,16 +1,18 @@
 package tfc
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"math/rand"
 	"net/http"
 	"net/url"
 	"os"
 	"reflect"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -32,12 +34,14 @@ const (
 	// DefaultAddress of Terraform Enterprise.
 	DefaultAddress = "https://app.terraform.io"
 	// DefaultBasePath on which the API is served.
-	DefaultBasePath = "/api/registry/v1/"
+	DefaultBasePath = "/api/v2/"
 	// PingEndpoint is a no-op API endpoint used to configure the rate limiter
 	PingEndpoint = "ping"
 )
 
 var (
+	// ErrItemsMustBeSlice is returned when an API response attribute called Items is not a slice
+	ErrItemsMustBeSlice = errors.New(`model field "Items" must be a slice`)
 	// ErrWorkspaceLocked is returned when trying to lock a
 	// locked workspace.
 	ErrWorkspaceLocked = errors.New("workspace already locked")
@@ -49,6 +53,8 @@ var (
 	ErrUnauthorized = errors.New("unauthorized")
 	// ErrResourceNotFound is returned when a receiving a 404.
 	ErrResourceNotFound = errors.New("resource not found")
+
+	ErrInvalidOrg = errors.New("invalid value for organization")
 )
 
 // RegistryClient is the Terraform Enterprise registry API client.
@@ -70,7 +76,7 @@ type RegistryClient struct {
 //
 // TFE API docs: https://www.terraform.io/docs/registry/api.html#service-discovery
 type RegistryModules interface {
-	List(ctx context.Context, options RegistryModuleListOptions) (*RegistryModuleList, error)
+	List(ctx context.Context, organization string, options *RegistryModuleListOptions) (*RegistryModuleList, error)
 }
 
 type registryModules struct {
@@ -79,40 +85,13 @@ type registryModules struct {
 
 // RegistryModuleListOptions represents the options for listing registry modules.
 type RegistryModuleListOptions struct {
-	Limit    int    `url:"limit"`
-	Provider string `url:"provider"`
-	Verified bool   `url:"verified"`
+	tfe.ListOptions
 }
 
 // RegistryModuleList represents a list of registry modules.
 type RegistryModuleList struct {
 	*tfe.Pagination
 	Items []*tfe.RegistryModule
-}
-
-type registryModuleListResponse struct {
-	Meta struct {
-		Limit         int    `json:"limit"`
-		CurrentOffset int    `json:"current_offset"`
-		NextOffset    int    `json:"next_offset"`
-		PrevOffset    int    `json:"prev_offset"`
-		NextURL       string `json:"next_url"`
-		PrevURL       string `json:"prev_url"`
-	} `json:"meta"`
-	Modules []struct {
-		ID          string    `json:"id"`
-		Owner       string    `json:"owner"`
-		Namespace   string    `json:"namespace"`
-		Name        string    `json:"name"`
-		Version     string    `json:"version"`
-		Provider    string    `json:"provider"`
-		Description string    `json:"description"`
-		Source      string    `json:"source"`
-		Tag         string    `json:"tag"`
-		PublishedAt time.Time `json:"published_at"`
-		Downloads   int       `json:"downloads"`
-		Verified    bool      `json:"verified"`
-	} `json:"modules"`
 }
 
 // DefaultConfig returns a default config structure.
@@ -426,70 +405,12 @@ func (c *RegistryClient) do(ctx context.Context, req *retryablehttp.Request, v i
 	}
 
 	// If v implements io.Writer, write the raw response body.
-	// if w, ok := v.(io.Writer); ok {
-	// 	_, err = io.Copy(w, resp.Body)
-	// 	return err
-	// }
-
-	// Get the value of v so we can test if it's a struct.
-	dst := reflect.Indirect(reflect.ValueOf(v))
-
-	// Return an error if v is not a struct or an io.Writer.
-	if dst.Kind() != reflect.Struct {
-		return fmt.Errorf("v must be a struct or an io.Writer")
-	}
-
-	// Try to get the Items and Pagination struct fields.
-	// items := dst.FieldByName("Items")
-	// pagination := dst.FieldByName("Pagination")
-
-	// Unmarshal a single value if v does not contain the
-	// Items and Pagination struct fields.
-	// if !items.IsValid() || !pagination.IsValid() {
-	// 	return jsonapi.UnmarshalPayload(resp.Body, v)
-	// }
-
-	// Return an error if v.Items is not a slice.
-	// if items.Type().Kind() != reflect.Slice {
-	// 	return fmt.Errorf("v.Items must be a slice")
-	// }
-
-	// Create a temporary buffer and copy all the read data into it.
-	// body := bytes.NewBuffer(nil)
-	// reader := io.TeeReader(resp.Body, body)
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
+	if w, ok := v.(io.Writer); ok {
+		_, err := io.Copy(w, resp.Body)
 		return err
 	}
 
-	// Unmarshal as a list of values as v.Items is a slice.
-	if err := json.Unmarshal(body, &v); err != nil {
-		return err
-	}
-
-	// Make a new slice to hold the results.
-	// sliceType := reflect.SliceOf(items.Type().Elem())
-	// result := reflect.MakeSlice(sliceType, 0, len(raw))
-
-	// // Add all of the results to the new slice.
-	// for _, v := range raw {
-	// 	result = reflect.Append(result, reflect.ValueOf(v))
-	// }
-
-	// // Pointer-swap the result.
-	// items.Set(result)
-
-	// // As we are getting a list of values, we need to decode
-	// // the pagination details out of the response body.
-	// p, err := parsePagination(body)
-	// if err != nil {
-	// 	return err
-	// }
-
-	// // Pointer-swap the decoded pagination details.
-	// pagination.Set(reflect.ValueOf(p))
-
-	return nil
+	return unmarshalResponse(resp.Body, v)
 }
 
 // checkResponseCode can be used to check the status code of an HTTP request.
@@ -534,38 +455,105 @@ func checkResponseCode(r *http.Response) error {
 	return fmt.Errorf(strings.Join(errs, "\n"))
 }
 
+func unmarshalResponse(responseBody io.Reader, model interface{}) error {
+	// Get the value of model so we can test if it's a struct.
+	dst := reflect.Indirect(reflect.ValueOf(model))
+
+	// Return an error if model is not a struct or an io.Writer.
+	if dst.Kind() != reflect.Struct {
+		return fmt.Errorf("%v must be a struct or an io.Writer", dst)
+	}
+
+	// Try to get the Items and Pagination struct fields.
+	items := dst.FieldByName("Items")
+	pagination := dst.FieldByName("Pagination")
+
+	// Unmarshal a single value if model does not contain the
+	// Items and Pagination struct fields.
+	if !items.IsValid() || !pagination.IsValid() {
+		return jsonapi.UnmarshalPayload(responseBody, model)
+	}
+
+	// Return an error if model.Items is not a slice.
+	if items.Type().Kind() != reflect.Slice {
+		return ErrItemsMustBeSlice
+	}
+
+	// Create a temporary buffer and copy all the read data into it.
+	body := bytes.NewBuffer(nil)
+	reader := io.TeeReader(responseBody, body)
+
+	// Unmarshal as a list of values as model.Items is a slice.
+	raw, err := jsonapi.UnmarshalManyPayload(reader, items.Type().Elem())
+	if err != nil {
+		return err
+	}
+
+	// Make a new slice to hold the results.
+	sliceType := reflect.SliceOf(items.Type().Elem())
+	result := reflect.MakeSlice(sliceType, 0, len(raw))
+
+	// Add all of the results to the new slice.
+	for _, v := range raw {
+		result = reflect.Append(result, reflect.ValueOf(v))
+	}
+
+	// Pointer-swap the result.
+	items.Set(result)
+
+	// As we are getting a list of values, we need to decode
+	// the pagination details out of the response body.
+	p, err := parsePagination(body)
+	if err != nil {
+		return err
+	}
+
+	// Pointer-swap the decoded pagination details.
+	pagination.Set(reflect.ValueOf(p))
+
+	return nil
+}
+
+func parsePagination(body io.Reader) (*tfe.Pagination, error) {
+	var raw struct {
+		Meta struct {
+			Pagination tfe.Pagination `jsonapi:"pagination"`
+		} `jsonapi:"meta"`
+	}
+
+	// JSON decode the raw response.
+	if err := json.NewDecoder(body).Decode(&raw); err != nil {
+		return &tfe.Pagination{}, err
+	}
+
+	return &raw.Meta.Pagination, nil
+}
+
 // List all the registory modules
-func (s *registryModules) List(ctx context.Context, options RegistryModuleListOptions) (*RegistryModuleList, error) {
-	req, err := s.client.newRequest("GET", "modules", &options)
+func (s *registryModules) List(ctx context.Context, organization string, options *RegistryModuleListOptions) (*RegistryModuleList, error) {
+	if !validStringID(&organization) {
+		return nil, ErrInvalidOrg
+	}
+
+	u := fmt.Sprintf("organizations/%s/registry-modules", url.QueryEscape(organization))
+	req, err := s.client.newRequest("GET", u, options)
 	if err != nil {
 		return nil, err
 	}
 
-	res := &registryModuleListResponse{}
-	err = s.client.do(ctx, req, res)
+	ml := &RegistryModuleList{}
+	err = s.client.do(ctx, req, ml)
 	if err != nil {
 		return nil, err
 	}
 
-	items := make([]*tfe.RegistryModule, len(res.Modules))
-	for i, v := range res.Modules {
-		items[i] = &tfe.RegistryModule{
-			ID:           v.ID,
-			Name:         v.Name,
-			Provider:     v.Provider,
-			Organization: &tfe.Organization{Name: v.Namespace},
-			VCSRepo:      &tfe.VCSRepo{Identifier: v.Source},
-		}
-		items[i].VersionStatuses = append(items[i].VersionStatuses, tfe.RegistryModuleVersionStatuses{Version: v.Version})
-	}
+	return ml, nil
+}
 
-	result := &RegistryModuleList{
-		Items: items,
-		Pagination: &tfe.Pagination{
-			CurrentPage:  res.Meta.CurrentOffset,
-			PreviousPage: res.Meta.PrevOffset,
-			NextPage:     res.Meta.NextOffset,
-		},
-	}
-	return result, nil
+// validations
+
+var reStringID = regexp.MustCompile(`^[a-zA-Z0-9\-._]+$`)
+
+func validStringID(v *string) bool {
+	return v != nil && reStringID.MatchString(*v)
 }

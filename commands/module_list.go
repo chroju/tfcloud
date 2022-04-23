@@ -10,11 +10,12 @@ import (
 )
 
 type ModuleListCommand struct {
+	organization string
 	Command
 }
 
 func (c *ModuleListCommand) Run(args []string) int {
-	if len(args) != 0 {
+	if len(args) != 1 {
 		c.UI.Error("Arguments are not valid.")
 		c.UI.Info(c.Help())
 		return 1
@@ -26,8 +27,9 @@ func (c *ModuleListCommand) Run(args []string) int {
 		return 1
 	}
 	c.Client = client
+	c.organization = args[0]
 
-	mdlist, err := c.Client.ModuleList()
+	mdlist, err := c.Client.ModuleList(c.organization)
 	if err != nil {
 		c.UI.Error(err.Error())
 		return 1
@@ -76,7 +78,7 @@ func (c *ModuleListCommand) Synopsis() string {
 }
 
 const helpModuleList = `
-Usage: tfcloud module list
+Usage: tfcloud module list <organization>
 
   Lists all terraform cloud private modules.
 `

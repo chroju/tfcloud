@@ -62,7 +62,7 @@ type TfCloud interface {
 	// WorkspaceUpdateVersion updates the terraform version config in the specified workspace.
 	WorkspaceUpdateVersion(organization, workspace, version string) error
 	// ModuleList returns all the terraform registry modules.
-	ModuleList() ([]*RegistryModule, error)
+	ModuleList(organization string) ([]*RegistryModule, error)
 	// ModuleGet returns the specified terraform registry module.
 	ModuleGet(organization, name, provider string) (*RegistryModule, error)
 }
@@ -203,12 +203,12 @@ func (c *tfclient) RunApply(runID string) error {
 func (c *tfclient) WorkspaceList(organization string) ([]*Workspace, error) {
 	wlo := &tfe.WorkspaceListOptions{
 		ListOptions: *defaultListOptions,
-		Search:      nil,
+		Search:      "",
 	}
 
 	var workspaces []*tfe.Workspace
 	for {
-		wslist, err := c.client.Workspaces.List(c.ctx, organization, *wlo)
+		wslist, err := c.client.Workspaces.List(c.ctx, organization, wlo)
 		if err != nil {
 			return nil, err
 		}
@@ -259,12 +259,14 @@ func (c *tfclient) WorkspaceUpdateVersion(organization, workspace, version strin
 	return err
 }
 
-func (c *tfclient) ModuleList() ([]*RegistryModule, error) {
+func (c *tfclient) ModuleList(organization string) ([]*RegistryModule, error) {
 	mlo := &RegistryModuleListOptions{
-		Limit: 100,
+		ListOptions: tfe.ListOptions{
+			PageSize: 100,
+		},
 	}
 
-	modulelist, err := c.registryClient.RegistryModules.List(c.ctx, *mlo)
+	modulelist, err := c.registryClient.RegistryModules.List(c.ctx, organization, mlo)
 	if err != nil {
 		return nil, err
 	}
@@ -289,7 +291,12 @@ func (c *tfclient) ModuleList() ([]*RegistryModule, error) {
 }
 
 func (c *tfclient) ModuleGet(organization, name, provider string) (*RegistryModule, error) {
-	module, err := c.client.RegistryModules.Read(c.ctx, organization, name, provider)
+	moduleID := tfe.RegistryModuleID{
+		Organization: organization,
+		Name:         name,
+		Provider:     provider,
+	}
+	module, err := c.client.RegistryModules.Read(c.ctx, moduleID)
 	if err != nil {
 		return nil, err
 	}
