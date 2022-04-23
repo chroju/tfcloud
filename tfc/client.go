@@ -4,13 +4,11 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"math/rand"
 	"net/http"
 	"net/url"
-	"os"
 	"reflect"
 	"regexp"
 	"strconv"
@@ -18,7 +16,6 @@ import (
 	"time"
 
 	"github.com/google/go-querystring/query"
-	"github.com/hashicorp/go-cleanhttp"
 	"github.com/hashicorp/go-retryablehttp"
 	tfe "github.com/hashicorp/go-tfe"
 	"github.com/svanharmelen/jsonapi"
@@ -30,35 +27,12 @@ const (
 	headerRateLimit  = "X-RateLimit-Limit"
 	headerRateReset  = "X-RateLimit-Reset"
 	headerAPIVersion = "TFP-API-Version"
-
-	// DefaultAddress of Terraform Enterprise.
-	DefaultAddress = "https://app.terraform.io"
-	// DefaultBasePath on which the API is served.
-	DefaultBasePath = "/api/v2/"
-	// PingEndpoint is a no-op API endpoint used to configure the rate limiter
-	PingEndpoint = "ping"
 )
 
-var (
-	// ErrItemsMustBeSlice is returned when an API response attribute called Items is not a slice
-	ErrItemsMustBeSlice = errors.New(`model field "Items" must be a slice`)
-	// ErrWorkspaceLocked is returned when trying to lock a
-	// locked workspace.
-	ErrWorkspaceLocked = errors.New("workspace already locked")
-	// ErrWorkspaceNotLocked is returned when trying to unlock
-	// a unlocked workspace.
-	ErrWorkspaceNotLocked = errors.New("workspace already unlocked")
+// Client is the Terraform Enterprise and Terraform Cloud API client.
+type Client struct {
+	*tfe.Client
 
-	// ErrUnauthorized is returned when a receiving a 401.
-	ErrUnauthorized = errors.New("unauthorized")
-	// ErrResourceNotFound is returned when a receiving a 404.
-	ErrResourceNotFound = errors.New("resource not found")
-
-	ErrInvalidOrg = errors.New("invalid value for organization")
-)
-
-// RegistryClient is the Terraform Enterprise registry API client.
-type RegistryClient struct {
 	baseURL           *url.URL
 	token             string
 	headers           http.Header
@@ -68,7 +42,7 @@ type RegistryClient struct {
 	retryServerErrors bool
 	remoteAPIVersion  string
 
-	RegistryModules RegistryModules
+	TfcRegistryModules RegistryModules
 }
 
 // RegistryModules describes the registry modules related methods that the Terraform
@@ -80,7 +54,7 @@ type RegistryModules interface {
 }
 
 type registryModules struct {
-	client *RegistryClient
+	client *Client
 }
 
 // RegistryModuleListOptions represents the options for listing registry modules.
@@ -94,30 +68,9 @@ type RegistryModuleList struct {
 	Items []*tfe.RegistryModule
 }
 
-// DefaultConfig returns a default config structure.
-func DefaultConfig() *tfe.Config {
-	config := &tfe.Config{
-		Address:    os.Getenv("TFE_ADDRESS"),
-		BasePath:   DefaultBasePath,
-		Token:      os.Getenv("TFE_TOKEN"),
-		Headers:    make(http.Header),
-		HTTPClient: cleanhttp.DefaultPooledClient(),
-	}
-
-	// Set the default address if none is given.
-	if config.Address == "" {
-		config.Address = DefaultAddress
-	}
-
-	// Set the default user agent.
-	config.Headers.Set("User-Agent", userAgent)
-
-	return config
-}
-
-// NewRegistryClient creates a new Terraform Enterprise API client.
-func NewRegistryClient(cfg *tfe.Config) (*RegistryClient, error) {
-	config := DefaultConfig()
+// NewClient creates a new Terraform Enterprise API client.
+func NewClient(cfg *tfe.Config) (*Client, error) {
+	config := tfe.DefaultConfig()
 
 	// Layer in the provided config for any non-blank values.
 	if cfg != nil {
@@ -152,17 +105,18 @@ func NewRegistryClient(cfg *tfe.Config) (*RegistryClient, error) {
 		baseURL.Path += "/"
 	}
 
-	// This value must be provided by the user.
-	if config.Token == "" {
-		return nil, fmt.Errorf("missing API token")
+	tfeClient, err := tfe.NewClient(config)
+	if err != nil {
+		return nil, err
 	}
 
 	// Create the client.
-	client := &RegistryClient{
+	client := &Client{
 		baseURL:      baseURL,
 		token:        config.Token,
 		headers:      config.Headers,
 		retryLogHook: config.RetryLogHook,
+		Client:       tfeClient,
 	}
 
 	client.http = &retryablehttp.Client{
@@ -187,14 +141,14 @@ func NewRegistryClient(cfg *tfe.Config) (*RegistryClient, error) {
 	// method later.
 	client.remoteAPIVersion = meta.APIVersion
 
-	client.RegistryModules = &registryModules{client: client}
+	client.TfcRegistryModules = &registryModules{client: client}
 
 	return client, nil
 }
 
 // retryHTTPCheck provides a callback for Client.CheckRetry which
 // will retry both rate limit (429) and server (>= 500) errors.
-func (c *RegistryClient) retryHTTPCheck(ctx context.Context, resp *http.Response, err error) (bool, error) {
+func (c *Client) retryHTTPCheck(ctx context.Context, resp *http.Response, err error) (bool, error) {
 	if ctx.Err() != nil {
 		return false, ctx.Err()
 	}
@@ -209,7 +163,7 @@ func (c *RegistryClient) retryHTTPCheck(ctx context.Context, resp *http.Response
 
 // retryHTTPBackoff provides a generic callback for Client.Backoff which
 // will pass through all calls based on the status code of the response.
-func (c *RegistryClient) retryHTTPBackoff(min, max time.Duration, attemptNum int, resp *http.Response) time.Duration {
+func (c *Client) retryHTTPBackoff(min, max time.Duration, attemptNum int, resp *http.Response) time.Duration {
 	if c.retryLogHook != nil {
 		c.retryLogHook(attemptNum, resp)
 	}
@@ -266,11 +220,11 @@ type rawAPIMetadata struct {
 	RateLimit string
 }
 
-func (c *RegistryClient) getRawAPIMetadata() (rawAPIMetadata, error) {
+func (c *Client) getRawAPIMetadata() (rawAPIMetadata, error) {
 	var meta rawAPIMetadata
 
 	// Create a new request.
-	u, err := c.baseURL.Parse(PingEndpoint)
+	u, err := c.baseURL.Parse(tfe.PingEndpoint)
 	if err != nil {
 		return meta, err
 	}
@@ -300,7 +254,7 @@ func (c *RegistryClient) getRawAPIMetadata() (rawAPIMetadata, error) {
 }
 
 // configureLimiter configures the rate limiter.
-func (c *RegistryClient) configureLimiter(rawLimit string) {
+func (c *Client) configureLimiter(rawLimit string) {
 
 	// Set default values for when rate limiting is disabled.
 	limit := rate.Inf
@@ -322,7 +276,7 @@ func (c *RegistryClient) configureLimiter(rawLimit string) {
 	c.limiter = rate.NewLimiter(limit, burst)
 }
 
-func (c *RegistryClient) newRequest(method, path string, v interface{}) (*retryablehttp.Request, error) {
+func (c *Client) newRequest(method, path string, v interface{}) (*retryablehttp.Request, error) {
 	u, err := c.baseURL.Parse(path)
 	if err != nil {
 		return nil, err
@@ -370,7 +324,7 @@ func (c *RegistryClient) newRequest(method, path string, v interface{}) (*retrya
 //
 // The provided ctx must be non-nil. If it is canceled or times out, ctx.Err()
 // will be returned.
-func (c *RegistryClient) do(ctx context.Context, req *retryablehttp.Request, v interface{}) error {
+func (c *Client) do(ctx context.Context, req *retryablehttp.Request, v interface{}) error {
 	// Wait will block until the limiter can obtain a new token
 	// or returns an error if the given context is canceled.
 	if err := c.limiter.Wait(ctx); err != nil {
@@ -421,17 +375,17 @@ func checkResponseCode(r *http.Response) error {
 
 	switch r.StatusCode {
 	case 401:
-		return ErrUnauthorized
+		return tfe.ErrUnauthorized
 	case 404:
-		return ErrResourceNotFound
+		return tfe.ErrResourceNotFound
 	case 409:
 		switch {
 		case strings.HasSuffix(r.Request.URL.Path, "actions/lock"):
-			return ErrWorkspaceLocked
+			return tfe.ErrWorkspaceLocked
 		case strings.HasSuffix(r.Request.URL.Path, "actions/unlock"):
-			return ErrWorkspaceNotLocked
+			return tfe.ErrWorkspaceNotLocked
 		case strings.HasSuffix(r.Request.URL.Path, "actions/force-unlock"):
-			return ErrWorkspaceNotLocked
+			return tfe.ErrWorkspaceNotLocked
 		}
 	}
 
@@ -476,7 +430,7 @@ func unmarshalResponse(responseBody io.Reader, model interface{}) error {
 
 	// Return an error if model.Items is not a slice.
 	if items.Type().Kind() != reflect.Slice {
-		return ErrItemsMustBeSlice
+		return tfe.ErrItemsMustBeSlice
 	}
 
 	// Create a temporary buffer and copy all the read data into it.
@@ -532,7 +486,7 @@ func parsePagination(body io.Reader) (*tfe.Pagination, error) {
 // List all the registory modules
 func (s *registryModules) List(ctx context.Context, organization string, options *RegistryModuleListOptions) (*RegistryModuleList, error) {
 	if !validStringID(&organization) {
-		return nil, ErrInvalidOrg
+		return nil, tfe.ErrInvalidOrg
 	}
 
 	u := fmt.Sprintf("organizations/%s/registry-modules", url.QueryEscape(organization))

@@ -68,10 +68,9 @@ type TfCloud interface {
 }
 
 type tfclient struct {
-	address        string
-	client         *tfe.Client
-	registryClient *RegistryClient
-	ctx            context.Context
+	address string
+	client  *Client
+	ctx     context.Context
 }
 
 // NewTfCloud creates a new TfCloud interface
@@ -80,22 +79,17 @@ func NewTfCloud(address, token string) (TfCloud, error) {
 	if err != nil {
 		return nil, err
 	}
-	client, err := tfe.NewClient(config)
-	if err != nil {
-		return nil, err
-	}
 
-	registryClient, err := NewRegistryClient(config)
+	client, err := NewClient(config)
 	if err != nil {
 		return nil, err
 	}
 
 	ctx := context.Background()
 	return &tfclient{
-		address,
-		client,
-		registryClient,
-		ctx,
+		address: address,
+		client:  client,
+		ctx:     ctx,
 	}, nil
 }
 
@@ -266,7 +260,7 @@ func (c *tfclient) ModuleList(organization string) ([]*RegistryModule, error) {
 		},
 	}
 
-	modulelist, err := c.registryClient.RegistryModules.List(c.ctx, organization, mlo)
+	modulelist, err := c.client.TfcRegistryModules.List(c.ctx, organization, mlo)
 	if err != nil {
 		return nil, err
 	}
