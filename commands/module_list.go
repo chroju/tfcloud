@@ -60,7 +60,7 @@ func (c *ModuleListCommand) Run(args []string) int {
 		fmt.Fprintln(w, "NAME\tLATEST\tLINK")
 		for _, r := range mdlist {
 			latest := r.VersionStatuses[0].Version
-			fmt.Fprintf(w, "%s\t%s\thttps://%s/app/%s/modules/view/%s/%s/%s\n",
+			fmt.Fprintf(w, "%s\t%s\t%s/app/%s/modules/view/%s/%s/%s\n",
 				*r.Name, latest, c.Client.Address(), *r.Organization, *r.Name, *r.Provider, latest)
 		}
 		w.Flush()

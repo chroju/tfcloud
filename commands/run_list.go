@@ -65,7 +65,7 @@ func (c *RunListCommand) Run(args []string) int {
 		w := tabwriter.NewWriter(out, 0, 4, 1, ' ', 0)
 		fmt.Fprintln(w, "WORKSPACE\tSTATUS\tNEEDS CONFIRM\tLINK")
 		for _, r := range runlist {
-			fmt.Fprintf(w, "%s\t%s\t%v\thttps://%s/app/%s/workspaces/%s/runs/%s\n",
+			fmt.Fprintf(w, "%s\t%s\t%v\t%s/app/%s/workspaces/%s/runs/%s\n",
 				*r.Workspace, *r.Status, *r.IsConfirmable, c.Client.Address(), c.organization, *r.Workspace, *r.ID)
 		}
 		w.Flush()

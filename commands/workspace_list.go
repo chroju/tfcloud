@@ -59,7 +59,7 @@ func (c *WorkspaceListCommand) Run(args []string) int {
 		w := tabwriter.NewWriter(out, 0, 4, 2, ' ', 0)
 		fmt.Fprintln(w, "NAME\tVERSION\tLINK")
 		for _, v := range wslist {
-			fmt.Fprintf(w, "%s\t%s\thttps://%s/app/%s/workspaces/%s\n",
+			fmt.Fprintf(w, "%s\t%s\t%s/app/%s/workspaces/%s\n",
 				*v.Name, *v.TerraformVersion, c.Client.Address(), c.organization, *v.Name)
 		}
 		w.Flush()

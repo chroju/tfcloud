@@ -87,7 +87,7 @@ func NewTfCloud(address, token string) (TfCloud, error) {
 
 	ctx := context.Background()
 	return &tfclient{
-		address: address,
+		address: config.Address,
 		client:  client,
 		ctx:     ctx,
 	}, nil

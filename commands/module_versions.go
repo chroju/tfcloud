@@ -43,7 +43,7 @@ func (c *ModuleVersionsCommand) Run(args []string) int {
 	w := tabwriter.NewWriter(out, 0, 4, 1, ' ', 0)
 	fmt.Fprintln(w, "VERSION\tSTATUS\tLINK")
 	for _, v := range result.VersionStatuses {
-		fmt.Fprintf(w, "%s\t%s\thttps://%s/app/%s/modules/view/%s/%s/%s\n",
+		fmt.Fprintf(w, "%s\t%s\t%s/app/%s/modules/view/%s/%s/%s\n",
 			v.Version, v.Status, c.Client.Address(), c.organization, c.name, c.provider, v.Version)
 	}
 	w.Flush()
