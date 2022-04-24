@@ -1,16 +1,16 @@
 package tfrelease
 
 import (
-	"encoding/json"
+	"context"
 	"fmt"
-	"io/ioutil"
-	"net/http"
 
+	"github.com/google/go-github/v43/github"
 	version "github.com/hashicorp/go-version"
 )
 
 const (
-	tfReleaseURL = "https://api.github.com/repos/hashicorp/terraform/releases"
+	repoOwner = "hashicorp"
+	repoName  = "terraform"
 )
 
 // TfRelease represents a Terraform release.
@@ -23,28 +23,37 @@ type TfRelease struct {
 
 // List returns all Terraform releases.
 func List() ([]*TfRelease, error) {
-	resp, err := http.Get(tfReleaseURL)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-
 	var tfReleases []*TfRelease
-	if err = json.Unmarshal(body, &tfReleases); err != nil {
-		return nil, err
+	client := github.NewClient(nil)
+
+	ctx := context.Background()
+	lo := &github.ListOptions{
+		PerPage: 100,
 	}
-	for _, v := range tfReleases {
-		sv, err := version.NewVersion(v.Tag)
+	for {
+		releases, resp, err := client.Repositories.ListReleases(ctx, repoOwner, repoName, lo)
 		if err != nil {
 			return nil, err
 		}
-		v.Version = sv
+
+		for _, v := range releases {
+			sv, err := version.NewVersion(*v.TagName)
+			if err != nil {
+				return nil, err
+			}
+			tfReleases = append(tfReleases, &TfRelease{
+				Draft:      *v.Draft,
+				PreRelease: *v.Prerelease,
+				Tag:        *v.TagName,
+				Version:    sv,
+			})
+		}
+		if resp.NextPage == 0 {
+			break
+		}
+		lo.Page = resp.NextPage
 	}
+
 	return tfReleases, nil
 }
 
