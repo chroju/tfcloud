@@ -6,12 +6,12 @@ tfcloud
 ![GitHub go.mod Go version (branch)](https://img.shields.io/github/go-mod/go-version/chroju/tfcloud/main)
 
 
-`tfcloud` is a partial [Terraform Cloud](https://www.terraform.io/docs/cloud/index.html) (and Terraform Enterprise) CLI tool.
+`tfcloud` is a [Terraform Cloud](https://www.terraform.io/docs/cloud/index.html) (and Terraform Enterprise) CLI tool.
 
 Notes
 -----
 
-* `tfcloud` is created for a limited purpose and does not intend to implement all Terraform Cloud / Enterprise APIs.
+* `tfcloud` is created for a limited purpose and not intended to implement all Terraform Cloud / Enterprise APIs.
 * Since Terraform Cloud and Terraform Enterprise have the same API, it will probably work with Terraform Enterprise, but it has not been confirmed.
 
 Install
@@ -20,7 +20,7 @@ Install
 ### Homebrew
 
 ```
-$ brew install chroju/tap/tfcloud
+brew install chroju/tap/tfcloud
 ```
 
 ### Download binary
@@ -54,6 +54,9 @@ $ tfcloud run apply <run ID>
 ```bash
 # Lists up the all workspace in the organization
 $ tfcloud workspace list <organization>
+
+# View Terraform Cloud workspace details
+$ tfcloud workspace view
 
 # Upgrades Terraform cloud workspace terraform version
 $ tfcloud workspace upgrade [OPTION]
