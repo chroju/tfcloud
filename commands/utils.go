@@ -30,6 +30,7 @@ func askForConfirmation(s string) (bool, error) {
 	}
 }
 
+// https://gist.github.com/hyg/9c4afcd91fe24316cbf0
 func openbrowser(url string) error {
 	var err error
 
