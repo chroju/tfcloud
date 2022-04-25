@@ -1,6 +1,12 @@
 CHANGELOG
 ====
 
+## v0.2.1 (2022-04-25)
+
+### bugfix
+
+* Fix Terraform backend config parse error.
+
 ## v0.2.0 (2022-04-24)
 
 ### ENHANCEMENT

@@ -72,7 +72,6 @@ func ParseRemoteBackend(root string) (*RemoteBackend, error) {
 			continue
 		}
 
-		var cfg *RemoteBackend
 		for _, block := range file.Body().Blocks() {
 			if block.Type() == "terraform" {
 				for _, subBlock := range block.Body().Blocks() {
@@ -84,21 +83,23 @@ func ParseRemoteBackend(root string) (*RemoteBackend, error) {
 							continue
 						}
 
-						cfg = &RemoteBackend{
+						cfg := &RemoteBackend{
 							Organization:    parseAttribute(subBlockBody.GetAttribute("organization")),
 							Hostname:        parseAttribute(subBlockBody.GetAttribute("hostname")),
 							WorkspaceName:   parseAttribute(subBlockBody.Blocks()[0].Body().GetAttribute("name")),
 							WorkspacePrefix: parseAttribute(subBlockBody.Blocks()[0].Body().GetAttribute("prefix")),
 							RequiredVersion: requiredVersion,
 						}
+
+						if cfg != nil && config != nil {
+							return nil, fmt.Errorf("Remote backend config is duplicated")
+						}
+
+						config = cfg
 					}
 				}
 			}
 		}
-		if config != nil {
-			return nil, fmt.Errorf("Remote backend config is duplicated")
-		}
-		config = cfg
 	}
 
 	if config == nil {
