@@ -248,6 +248,10 @@ func (c *tfclient) WorkspaceGet(organization, workspace string) (*Workspace, err
 	if err != nil {
 		return nil, err
 	}
+	vcsRepoName := ""
+	if ws.VCSRepo != nil {
+		vcsRepoName = ws.VCSRepo.Identifier
+	}
 
 	return &Workspace{
 		ID:               &ws.ID,
@@ -256,7 +260,7 @@ func (c *tfclient) WorkspaceGet(organization, workspace string) (*Workspace, err
 		ExecutionMode:    &ws.ExecutionMode,
 		AutoApply:        &ws.AutoApply,
 		CurrentRun:       ws.CurrentRun,
-		VCSRepoName:      &ws.VCSRepo.Identifier,
+		VCSRepoName:      &vcsRepoName,
 		WorkingDirectory: &ws.WorkingDirectory,
 		ResourceCount:    &ws.ResourceCount,
 		CreatedAt:        ws.CreatedAt,
