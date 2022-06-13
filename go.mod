@@ -9,7 +9,7 @@ require (
 	github.com/hashicorp/go-tfe v1.3.0
 	github.com/hashicorp/go-version v1.5.0
 	github.com/hashicorp/hcl/v2 v2.12.0
-	github.com/mitchellh/cli v1.1.3
+	github.com/mitchellh/cli v1.1.4
 	github.com/spf13/pflag v1.0.5
 	github.com/svanharmelen/jsonapi v0.0.0-20180618144545-0c0828c3f16d
 	golang.org/x/time v0.0.0-20200630173020-3af7569d3a1e
