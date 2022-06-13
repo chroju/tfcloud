@@ -6,10 +6,10 @@ require (
 	github.com/google/go-github/v43 v43.0.0
 	github.com/google/go-querystring v1.1.0
 	github.com/hashicorp/go-retryablehttp v0.7.1
-	github.com/hashicorp/go-tfe v1.2.0
+	github.com/hashicorp/go-tfe v1.3.0
 	github.com/hashicorp/go-version v1.5.0
 	github.com/hashicorp/hcl/v2 v2.12.0
-	github.com/mitchellh/cli v1.1.3
+	github.com/mitchellh/cli v1.1.4
 	github.com/spf13/pflag v1.0.5
 	github.com/svanharmelen/jsonapi v0.0.0-20180618144545-0c0828c3f16d
 	golang.org/x/time v0.0.0-20200630173020-3af7569d3a1e
@@ -29,7 +29,7 @@ require (
 	github.com/hashicorp/errwrap v1.0.0 // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
 	github.com/hashicorp/go-multierror v1.0.0 // indirect
-	github.com/hashicorp/go-slug v0.8.0 // indirect
+	github.com/hashicorp/go-slug v0.8.1 // indirect
 	github.com/hashicorp/jsonapi v0.0.0-20210826224640-ee7dae0fb22d // indirect
 	github.com/huandu/xstrings v1.3.2 // indirect
 	github.com/imdario/mergo v0.3.11 // indirect
