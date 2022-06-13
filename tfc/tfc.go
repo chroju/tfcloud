@@ -277,11 +277,11 @@ func (c *tfclient) WorkspaceUpdateVersion(organization, workspace, version strin
 }
 
 func (c *tfclient) ModuleList(organization string) ([]*RegistryModule, error) {
-	mlo := &RegistryModuleListOptions{
+	mlo := &tfe.RegistryModuleListOptions{
 		ListOptions: *defaultListOptions,
 	}
 
-	modulelist, err := c.client.TfcRegistryModules.List(c.ctx, organization, mlo)
+	modulelist, err := c.client.RegistryModules.List(c.ctx, organization, mlo)
 	if err != nil {
 		return nil, err
 	}
