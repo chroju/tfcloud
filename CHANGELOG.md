@@ -1,6 +1,15 @@
 CHANGELOG
 ====
 
+## v0.2.3 (2022-06-12)
+
+### Others
+
+* Update README.
+* Update dependencies.
+  * Update mitchellh/cli to 1.1.4 ([#20](https://github.com/chroju/tfcloud/pull/20))
+  * Update hashicorp/go-tfe to 1.3.0 ([#21](https://github.com/chroju/tfcloud/pull/21))
+
 ## v0.2.2 (2022-05-20)
 
 ### Bugfix
