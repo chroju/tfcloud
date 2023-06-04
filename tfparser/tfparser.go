@@ -3,6 +3,7 @@ package tfparser
 import (
 	"fmt"
 	"io/ioutil"
+	"os"
 	"path/filepath"
 
 	version "github.com/hashicorp/go-version"
@@ -10,6 +11,7 @@ import (
 	"github.com/hashicorp/hcl/v2/gohcl"
 	"github.com/hashicorp/hcl/v2/hclparse"
 	"github.com/hashicorp/hcl/v2/hclwrite"
+	"github.com/hashicorp/hcl/v2/json"
 )
 
 type terraformrc struct {
@@ -34,13 +36,26 @@ type RemoteBackend struct {
 
 // ParseTerraformrc parses terraformrc file and returns a Terraform Cloud credential.
 func ParseTerraformrc(path string) (*Credential, error) {
-	parser := hclparse.NewParser()
-	f, diags := parser.ParseHCLFile(path)
-	if diags.HasErrors() {
-		return nil, fmt.Errorf("%s", diags.Error())
+	tfrcJSONPath := os.Getenv("HOME") + "/.terraform.d/credentials.tfrc.json"
+	var b *hcl.File
+	var diags hcl.Diagnostics
+
+	if _, err := os.Stat(tfrcJSONPath); err == nil {
+		b, diags = json.ParseFile(tfrcJSONPath)
+		if diags.HasErrors() {
+			return nil, fmt.Errorf("%s", diags.Error())
+		}
+	} else if _, err = os.Stat(path); err == nil {
+		parser := hclparse.NewParser()
+		b, diags = parser.ParseHCLFile(path)
+		if diags.HasErrors() {
+			return nil, fmt.Errorf("%s", diags.Error())
+		}
+	} else {
+		return nil, fmt.Errorf("terraform credential file not found")
 	}
 
-	return parseTerraformrcConfig(f)
+	return parseTerraformrcConfig(b)
 }
 
 func parseTerraformrcConfig(configFile *hcl.File) (*Credential, error) {

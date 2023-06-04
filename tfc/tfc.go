@@ -100,6 +100,17 @@ func NewTfCloud(address, token string) (TfCloud, error) {
 }
 
 func NewCredentials(filepath, address, token string) (*tfe.Config, error) {
+	envs := os.Environ()
+	for _, env := range envs {
+		if strings.HasPrefix(env, "TF_TOKEN_") {
+			kv := strings.Split(env, "=")
+			splitted := strings.Split(kv[0], "_")
+			return &tfe.Config{
+				Address: fmt.Sprintf("https://%s", strings.Join(splitted[2:], ".")),
+				Token:   kv[1],
+			}, nil
+		}
+	}
 	terraformrcPath := os.Getenv("TF_CLI_CONFIG_FILE")
 	if filepath != "" {
 		terraformrcPath = filepath

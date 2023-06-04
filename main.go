@@ -5,7 +5,6 @@ import (
 	"os"
 
 	"github.com/chroju/tfcloud/commands"
-	"github.com/chroju/tfcloud/tfparser"
 	"github.com/mitchellh/cli"
 )
 
@@ -82,13 +81,4 @@ func main() {
 	}
 
 	os.Exit(exitStatus)
-}
-
-func initCredential() (*tfparser.Credential, error) {
-	terraformrcPath := os.Getenv("TF_CLI_CONFIG_FILE")
-	if terraformrcPath == "" {
-		terraformrcPath = os.Getenv("HOME") + "/.terraformrc"
-	}
-
-	return tfparser.ParseTerraformrc(terraformrcPath)
 }
