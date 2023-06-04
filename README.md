@@ -46,9 +46,9 @@ Usage
 
 `tfcloud` supports table and JSON output formats. The default is table format, but you can change it with the `--format` option. The table format is user-friendly, but does not contain all the information. If you want to get all the information, use the JSON format.
 
-```bash
-
 ### Commands
+
+```bash
 
 #### run
 
