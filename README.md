@@ -11,8 +11,8 @@ tfcloud
 Notes
 -----
 
-* `tfcloud` is created for the limited purpose and not intended to implement all Terraform Cloud / Enterprise APIs.
-* Since Terraform Cloud and Terraform Enterprise have the same API, `tfcloud` will probably work with Terraform Enterprise. However, it has not been tested with actual Terraform Entrprise environments.
+* `tfcloud` is a Terraform Cloud (and Terraform Enterprise) CLI tool that is created with a specific purpose in mind and does not intend to implement all Terraform Cloud / Enterprise APIs.
+* While `tfcloud` should work with Terraform Enterprise due to the similarity of their APIs, it hasn't been tested in actual Terraform Enterprise environments.
 
 Install
 -------
@@ -25,7 +25,7 @@ brew install chroju/tap/tfcloud
 
 ### Download binary
 
-Download the latest binary from here and put it in your `$PATH` directory.
+Download the latest binary from the following link and place it in your `$PATH` directory.
 
 https://github.com/chroju/tfcloud/releases
 
@@ -35,7 +35,18 @@ Usage
 
 ### Authentication
 
-`tfcloud` requires a Terraform Cloud/Enterprise token. The authentication method is the same as described in [CLI Configuration - Terraform by HashiCorp](https://www.terraform.io/docs/commands/cli-config.html#credentials-1) (like `$HOME/.terraformrc`, `TF_CLI_CONFIG_FILE` environment variable).
+`tfcloud` requires a Terraform Cloud / Enterprise token for authentication. The method for this is the same as described in [CLI Configuration - Terraform by HashiCorp](https://www.terraform.io/docs/commands/cli-config.html#credentials-1) such as
+
+* `terraform login` command
+* `$HOME/.terraformrc`
+* `TF_CLI_CONFIG_FILE` environment variable
+* `TF_TOKEN_hostname` environment variable
+
+### Output format
+
+`tfcloud` supports table and JSON output formats. The default is table format, but you can change it with the `--format` option. The table format is user-friendly, but does not contain all the information. If you want to get all the information, use the JSON format.
+
+```bash
 
 ### Commands
 
@@ -56,7 +67,8 @@ $ tfcloud run apply <run ID>
 $ tfcloud workspace list <organization>
 
 # View Terraform Cloud workspace details
-$ tfcloud workspace view
+$ tfcloud workspace view # Read the remote config in the current directory
+$ tfcloud workspace view --org <organization> --workspace <workspace name> # You can also specify the organization and workspace name
 
 # Upgrades Terraform cloud workspace terraform version
 $ tfcloud workspace upgrade [OPTION]

@@ -2,11 +2,13 @@ package commands
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"strings"
 	"text/tabwriter"
 
 	"github.com/chroju/tfcloud/tfc"
+	flag "github.com/spf13/pflag"
 )
 
 type WorkspaceListCommand struct {
@@ -15,12 +17,20 @@ type WorkspaceListCommand struct {
 }
 
 func (c *WorkspaceListCommand) Run(args []string) int {
-	if len(args) != 1 {
-		c.UI.Error("Arguments are not valid.")
-		c.UI.Info(c.Help())
+	var formatOpt string
+	f := flag.NewFlagSet("module_list", flag.ExitOnError)
+	f.StringVarP(&formatOpt, "format", "f", "", "Output format. Available formats: json, table")
+	if err := f.Parse(args); err != nil {
+		c.UI.Error(fmt.Sprintf("Arguments are not valid: %s", err))
+		c.UI.Error(err.Error())
 		return 1
 	}
-	c.organization = args[0]
+
+	if formatOpt != "" {
+		c.Command.Format = Format(formatOpt)
+	}
+
+	c.organization = f.Arg(0)
 
 	client, err := tfc.NewTfCloud("", "")
 	if err != nil {
@@ -36,7 +46,7 @@ func (c *WorkspaceListCommand) Run(args []string) int {
 	}
 
 	switch c.Command.Format {
-	case "alfred":
+	case FormatAlfred:
 		alfredItems := make([]AlfredFormatItem, len(wslist))
 		for i, v := range wslist {
 			alfredItems[i] = AlfredFormatItem{
@@ -54,6 +64,13 @@ func (c *WorkspaceListCommand) Run(args []string) int {
 			return 1
 		}
 		c.UI.Output(out)
+	case FormatJSON:
+		out, err := json.MarshalIndent(wslist, "", "  ")
+		if err != nil {
+			c.UI.Error(err.Error())
+			return 1
+		}
+		c.UI.Output(string(out))
 	default:
 		out := new(bytes.Buffer)
 		w := tabwriter.NewWriter(out, 0, 4, 2, ' ', 0)
@@ -77,7 +94,10 @@ func (c *WorkspaceListCommand) Synopsis() string {
 }
 
 const helpWorkspaceList = `
-Usage: tfcloud workspace list <organization>
+Usage: tfcloud workspace list [OPTIONS] <organization>
 
   Lists all terraform cloud workspaces
+
+Options:
+  --format, -f             Output format. Available formats: json, table (default: table)
 `

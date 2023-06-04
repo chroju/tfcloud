@@ -2,12 +2,14 @@ package commands
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"strings"
 	"text/tabwriter"
 	"time"
 
 	"github.com/chroju/tfcloud/tfc"
+	flag "github.com/spf13/pflag"
 )
 
 type RunListCommand struct {
@@ -17,10 +19,17 @@ type RunListCommand struct {
 }
 
 func (c *RunListCommand) Run(args []string) int {
-	if len(args) != 1 {
-		c.UI.Error("Arguments are not valid.")
-		c.UI.Info(c.Help())
+	var formatOpt string
+	f := flag.NewFlagSet("module_list", flag.ExitOnError)
+	f.StringVarP(&formatOpt, "format", "f", "", "Output format. Available formats: json, table")
+	if err := f.Parse(args); err != nil {
+		c.UI.Error(fmt.Sprintf("Arguments are not valid: %s", err))
+		c.UI.Error(err.Error())
 		return 1
+	}
+
+	if formatOpt != "" {
+		c.Command.Format = Format(formatOpt)
 	}
 
 	client, err := tfc.NewTfCloud("", "")
@@ -30,7 +39,7 @@ func (c *RunListCommand) Run(args []string) int {
 	}
 	c.Client = client
 
-	c.organization = args[0]
+	c.organization = f.Arg(0)
 	localTZ, _ := time.LoadLocation("Local")
 	c.localTZ = localTZ
 
@@ -41,7 +50,7 @@ func (c *RunListCommand) Run(args []string) int {
 	}
 
 	switch c.Command.Format {
-	case "alfred":
+	case FormatAlfred:
 		alfredItems := make([]AlfredFormatItem, len(runlist))
 		for i, v := range runlist {
 			localtime := v.CreatedAt.In(c.localTZ)
@@ -60,6 +69,13 @@ func (c *RunListCommand) Run(args []string) int {
 			return 1
 		}
 		c.UI.Output(out)
+	case FormatJSON:
+		out, err := json.MarshalIndent(runlist, "", "  ")
+		if err != nil {
+			c.UI.Error(err.Error())
+			return 1
+		}
+		c.UI.Output(string(out))
 	default:
 		out := new(bytes.Buffer)
 		w := tabwriter.NewWriter(out, 0, 4, 1, ' ', 0)
@@ -83,7 +99,10 @@ func (c *RunListCommand) Synopsis() string {
 }
 
 const helpRunList = `
-Usage: tfcloud run list <organization>
+Usage: tfcloud run list [OPTIONS] <organization>
 
   Lists all current terraform runs in the organization.
+
+Options:
+  --format, -f             Output format. Available formats: json, table (default: table)
 `
