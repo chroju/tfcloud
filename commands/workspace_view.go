@@ -2,6 +2,7 @@ package commands
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"os"
 	"strings"
@@ -23,12 +24,14 @@ type WorkspaceViewCommand struct {
 }
 
 func (c *WorkspaceViewCommand) Run(args []string) int {
+	var formatOpt string
 	currentDir, _ := os.Getwd()
 	f := flag.NewFlagSet("workspace_view", flag.ExitOnError)
 	f.StringVar(&c.rootDir, "root-path", currentDir, "Terraform config root path")
 	f.StringVar(&c.organization, "org", "", "Specify organization name directly, must used with --workspace")
 	f.StringVar(&c.workspace, "workspace", "", "Specify workspace name directly, must used with --org")
 	f.BoolVarP(&c.web, "web", "w", false, "Show in the web browser")
+	f.StringVarP(&formatOpt, "format", "f", "", "Output format. Available formats: json, table")
 	if err := f.Parse(args); err != nil {
 		c.UI.Error(fmt.Sprintf("Arguments are not valid: %s", err))
 		c.UI.Error(err.Error())
@@ -44,6 +47,10 @@ func (c *WorkspaceViewCommand) Run(args []string) int {
 	// org and workspace are must be combined each other
 	if (c.organization == "" && c.workspace != "") || (c.organization != "" && c.workspace == "") {
 		c.UI.Error("You must specify both --organization and --workspace")
+	}
+
+	if formatOpt != "" {
+		c.Command.Format = Format(formatOpt)
 	}
 
 	client, err := tfc.NewTfCloud("", "")
@@ -74,6 +81,13 @@ func (c *WorkspaceViewCommand) Run(args []string) int {
 
 	if c.web {
 		openbrowser(url)
+	} else if c.Command.Format == FormatJSON {
+		out, err := json.MarshalIndent(ws, "", "  ")
+		if err != nil {
+			c.UI.Error(err.Error())
+			return 1
+		}
+		c.UI.Output(string(out))
 	} else {
 		out := new(bytes.Buffer)
 		w := tabwriter.NewWriter(out, 0, 4, 2, ' ', 0)
@@ -118,4 +132,5 @@ Options:
   --workspace              Specify workspace name directly, must used with --org
   --web, -w                View Terraform cloud workspace in a web browser.
 
+  --format, -f             Output format. Available formats: json, table (default: table)
 `

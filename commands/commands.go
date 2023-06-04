@@ -8,5 +8,5 @@ import (
 type Command struct {
 	Client tfc.TfCloud
 	UI     cli.Ui
-	Format string
+	Format Format
 }

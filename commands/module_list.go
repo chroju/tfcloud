@@ -2,11 +2,13 @@ package commands
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"strings"
 	"text/tabwriter"
 
 	"github.com/chroju/tfcloud/tfc"
+	flag "github.com/spf13/pflag"
 )
 
 type ModuleListCommand struct {
@@ -15,10 +17,17 @@ type ModuleListCommand struct {
 }
 
 func (c *ModuleListCommand) Run(args []string) int {
-	if len(args) != 1 {
-		c.UI.Error("Arguments are not valid.")
-		c.UI.Info(c.Help())
+	var formatOpt string
+	f := flag.NewFlagSet("module_list", flag.ExitOnError)
+	f.StringVarP(&formatOpt, "format", "f", "", "Output format. Available formats: json, table")
+	if err := f.Parse(args); err != nil {
+		c.UI.Error(fmt.Sprintf("Arguments are not valid: %s", err))
+		c.UI.Error(err.Error())
 		return 1
+	}
+
+	if formatOpt != "" {
+		c.Command.Format = Format(formatOpt)
 	}
 
 	client, err := tfc.NewTfCloud("", "")
@@ -27,7 +36,7 @@ func (c *ModuleListCommand) Run(args []string) int {
 		return 1
 	}
 	c.Client = client
-	c.organization = args[0]
+	c.organization = f.Arg(0)
 
 	mdlist, err := c.Client.ModuleList(c.organization)
 	if err != nil {
@@ -36,7 +45,7 @@ func (c *ModuleListCommand) Run(args []string) int {
 	}
 
 	switch c.Command.Format {
-	case "alfred":
+	case FormatAlfred:
 		alfredItems := make([]AlfredFormatItem, len(mdlist))
 		for i, v := range mdlist {
 			alfredItems[i] = AlfredFormatItem{
@@ -54,6 +63,13 @@ func (c *ModuleListCommand) Run(args []string) int {
 			return 1
 		}
 		c.UI.Output(out)
+	case FormatJSON:
+		out, err := json.MarshalIndent(mdlist, "", "  ")
+		if err != nil {
+			c.UI.Error(err.Error())
+			return 1
+		}
+		c.UI.Output(string(out))
 	default:
 		out := new(bytes.Buffer)
 		w := tabwriter.NewWriter(out, 0, 4, 1, ' ', 0)
@@ -78,7 +94,10 @@ func (c *ModuleListCommand) Synopsis() string {
 }
 
 const helpModuleList = `
-Usage: tfcloud module list <organization>
+Usage: tfcloud module list [OPTIONS] <organization>
 
   Lists all terraform cloud private modules.
+
+Options:
+  --format, -f             Output format. Available formats: json, table (default: table)
 `

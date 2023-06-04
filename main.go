@@ -17,6 +17,8 @@ const (
 var (
 	// UI is a cli.Ui
 	UI cli.Ui
+	// Format is a format of output
+	Format commands.Format
 )
 
 func init() {
@@ -32,7 +34,7 @@ func init() {
 }
 
 func main() {
-	format := os.Getenv("TFCLOUD_FORMAT")
+	format := commands.Format(os.Getenv("TFCLOUD_FORMAT"))
 
 	command := commands.Command{
 		UI:     UI,

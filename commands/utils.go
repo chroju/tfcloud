@@ -9,6 +9,14 @@ import (
 	"strings"
 )
 
+type Format string
+
+const (
+	FormatTable  = Format("table")
+	FormatJSON   = Format("json")
+	FormatAlfred = Format("alfred")
+)
+
 func askForConfirmation(s string) (bool, error) {
 	reader := bufio.NewReader(os.Stdin)
 

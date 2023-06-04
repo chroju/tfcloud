@@ -18,37 +18,37 @@ var defaultListOptions = &tfe.ListOptions{
 
 // Run represents a Terraform workspaces run.
 type Run struct {
-	ID            *string
-	Organization  *string
-	Workspace     *string
-	Status        *string
-	IsConfirmable *bool
-	CreatedAt     time.Time
+	ID            *string   `json:"id"`
+	Organization  *string   `json:"organization"`
+	Workspace     *string   `json:"workspace"`
+	Status        *string   `json:"status"`
+	IsConfirmable *bool     `json:"is_confirmable"`
+	CreatedAt     time.Time `json:"created_at"`
 }
 
 // Workspace represents a Terraform Cloud workspace.
 type Workspace struct {
-	ID               *string
-	Name             *string
-	TerraformVersion *string
-	ExecutionMode    *string
-	AutoApply        *bool
-	CurrentRun       *tfe.Run
-	VCSRepoName      *string
-	WorkingDirectory *string
-	ResourceCount    *int
-	CreatedAt        time.Time
-	UpdatedAt        time.Time
+	ID               *string   `json:"id"`
+	Name             *string   `json:"name"`
+	TerraformVersion *string   `json:"terraform_version"`
+	ExecutionMode    *string   `json:"execution_mode"`
+	AutoApply        *bool     `json:"auto_apply"`
+	CurrentRun       *tfe.Run  `json:"current_run,omitempty"`
+	VCSRepoName      *string   `json:"vcs_repo"`
+	WorkingDirectory *string   `json:"working_directory"`
+	ResourceCount    *int      `json:"resource_count"`
+	CreatedAt        time.Time `json:"created_at"`
+	UpdatedAt        time.Time `json:"updated_at"`
 }
 
 // RegistryModule represents a Terraform Cloud registry module.
 type RegistryModule struct {
-	ID              *string
-	Name            *string
-	Provider        *string
-	VersionStatuses []tfe.RegistryModuleVersionStatuses
-	Organization    *string
-	Source          *string
+	ID              *string                             `json:"id"`
+	Name            *string                             `json:"name"`
+	Provider        *string                             `json:"provider"`
+	VersionStatuses []tfe.RegistryModuleVersionStatuses `json:"version_statuses"`
+	Organization    *string                             `json:"organization"`
+	Source          *string                             `json:"source"`
 }
 
 // TfCloud represents Terraform Cloud API client.
