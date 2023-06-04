@@ -1,6 +1,13 @@
 CHANGELOG
 ====
 
+## v0.3.0 (2023-06-04)
+
+* Add `--org` and `--workspace` options to `workspace view` command.
+* Add `--format` option to some commands.
+* Support additonal authentication options such as `terraform login` command and `TF_TOKEN_hostname` environment variable.
+* Update dependencies.
+
 ## v0.2.3 (2022-06-12)
 
 ### Others
