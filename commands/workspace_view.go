@@ -16,19 +16,34 @@ const timeFormat = "2006-01-02 15:04:05 (MST)"
 
 type WorkspaceViewCommand struct {
 	Command
-	rootDir string
-	web     bool
+	rootDir      string
+	workspace    string
+	organization string
+	web          bool
 }
 
 func (c *WorkspaceViewCommand) Run(args []string) int {
 	currentDir, _ := os.Getwd()
 	f := flag.NewFlagSet("workspace_view", flag.ExitOnError)
-	f.StringVar(&c.rootDir, "root-path", currentDir, "Terraform config root path (default: current directory)")
+	f.StringVar(&c.rootDir, "root-path", currentDir, "Terraform config root path")
+	f.StringVar(&c.organization, "org", "", "Specify organization name directly, must used with --workspace")
+	f.StringVar(&c.workspace, "workspace", "", "Specify workspace name directly, must used with --org")
 	f.BoolVarP(&c.web, "web", "w", false, "Show in the web browser")
 	if err := f.Parse(args); err != nil {
 		c.UI.Error(fmt.Sprintf("Arguments are not valid: %s", err))
 		c.UI.Error(err.Error())
 		return 1
+	}
+
+	// org and workspace are must not be used with --root-path
+	if c.rootDir != currentDir && (c.organization != "" || c.workspace != "") {
+		c.UI.Error("You can't use --root-path with --organization and -workspace")
+		return 1
+	}
+
+	// org and workspace are must be combined each other
+	if (c.organization == "" && c.workspace != "") || (c.organization != "" && c.workspace == "") {
+		c.UI.Error("You must specify both --organization and --workspace")
 	}
 
 	client, err := tfc.NewTfCloud("", "")
@@ -38,18 +53,24 @@ func (c *WorkspaceViewCommand) Run(args []string) int {
 	}
 	c.Client = client
 
-	rb, err := tfparser.ParseRemoteBackend(c.rootDir)
-	if err != nil {
-		c.UI.Error(err.Error())
-		return 1
+	workspace := c.workspace
+	organization := c.organization
+	if c.organization == "" && c.workspace == "" {
+		rb, err := tfparser.ParseRemoteBackend(c.rootDir)
+		if err != nil {
+			c.UI.Error(err.Error())
+			return 1
+		}
+		workspace = rb.WorkspaceName
+		organization = rb.Organization
 	}
 
-	ws, err := c.Client.WorkspaceGet(rb.Organization, rb.WorkspaceName)
+	ws, err := c.Client.WorkspaceGet(organization, workspace)
 	if err != nil {
 		c.UI.Error(err.Error())
 		return 1
 	}
-	url := fmt.Sprintf("%s/app/%s/workspaces/%s", c.Client.Address(), rb.Organization, rb.WorkspaceName)
+	url := fmt.Sprintf("%s/app/%s/workspaces/%s", c.Client.Address(), organization, workspace)
 
 	if c.web {
 		openbrowser(url)
@@ -88,11 +109,13 @@ Usage: tfcloud workspace view [OPTION]
 
 Notes:
   This command works by reading the remote config in the current directory.
-  You must run this command in the directory where the target terraform file resides.
-  Or you can specify the target directory with the --root-path option.
+  You can run this command in the directory where the target terraform file resides.
+  You can also specify the target directory or the target workspace directly.
 
 Options:
   --root-path              Terraform config root path. (default: current directory)
+  --org					   Specify organization name directly, must used with --workspace
+  --workspace              Specify workspace name directly, must used with --org
   --web, -w                View Terraform cloud workspace in a web browser.
 
 `
