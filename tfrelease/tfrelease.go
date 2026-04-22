@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/google/go-github/v43/github"
+	"github.com/google/go-github/v67/github"
 	version "github.com/hashicorp/go-version"
 )
 
@@ -74,5 +74,5 @@ func latest(releases []*TfRelease) (*TfRelease, error) {
 		return v, nil
 	}
 
-	return nil, fmt.Errorf("Something is wrong to get latest terraform version")
+	return nil, fmt.Errorf("something is wrong to get latest terraform version")
 }
