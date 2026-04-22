@@ -11,10 +11,9 @@ linters:
 formatters:
   enable:
     - gofmt
-
-formatters-settings:
-  gofmt:
-    simplify: true
+  settings:
+    gofmt:
+      simplify: true
 
 run:
   timeout: 5m
