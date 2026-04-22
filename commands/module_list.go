@@ -27,7 +27,7 @@ func (c *ModuleListCommand) Run(args []string) int {
 	}
 
 	if formatOpt != "" {
-		c.Command.Format = Format(formatOpt)
+		c.Format = Format(formatOpt)
 	}
 
 	client, err := tfc.NewTfCloud("", "")
@@ -44,7 +44,7 @@ func (c *ModuleListCommand) Run(args []string) int {
 		return 1
 	}
 
-	switch c.Command.Format {
+	switch c.Format {
 	case FormatAlfred:
 		alfredItems := make([]AlfredFormatItem, len(mdlist))
 		for i, v := range mdlist {
@@ -73,13 +73,13 @@ func (c *ModuleListCommand) Run(args []string) int {
 	default:
 		out := new(bytes.Buffer)
 		w := tabwriter.NewWriter(out, 0, 4, 1, ' ', 0)
-		fmt.Fprintln(w, "NAME\tLATEST\tLINK")
+		_, _ = fmt.Fprintln(w, "NAME\tLATEST\tLINK")
 		for _, r := range mdlist {
 			latest := r.VersionStatuses[0].Version
-			fmt.Fprintf(w, "%s\t%s\t%s/app/%s/modules/view/%s/%s/%s\n",
+			_, _ = fmt.Fprintf(w, "%s\t%s\t%s/app/%s/modules/view/%s/%s/%s\n",
 				*r.Name, latest, c.Client.Address(), *r.Organization, *r.Name, *r.Provider, latest)
 		}
-		w.Flush()
+		_ = w.Flush()
 		c.UI.Output(out.String())
 	}
 	return 0

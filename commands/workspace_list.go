@@ -27,7 +27,7 @@ func (c *WorkspaceListCommand) Run(args []string) int {
 	}
 
 	if formatOpt != "" {
-		c.Command.Format = Format(formatOpt)
+		c.Format = Format(formatOpt)
 	}
 
 	c.organization = f.Arg(0)
@@ -45,7 +45,7 @@ func (c *WorkspaceListCommand) Run(args []string) int {
 		return 1
 	}
 
-	switch c.Command.Format {
+	switch c.Format {
 	case FormatAlfred:
 		alfredItems := make([]AlfredFormatItem, len(wslist))
 		for i, v := range wslist {
@@ -74,12 +74,12 @@ func (c *WorkspaceListCommand) Run(args []string) int {
 	default:
 		out := new(bytes.Buffer)
 		w := tabwriter.NewWriter(out, 0, 4, 2, ' ', 0)
-		fmt.Fprintln(w, "NAME\tVERSION\tLINK")
+		_, _ = fmt.Fprintln(w, "NAME\tVERSION\tLINK")
 		for _, v := range wslist {
-			fmt.Fprintf(w, "%s\t%s\t%s/app/%s/workspaces/%s\n",
+			_, _ = fmt.Fprintf(w, "%s\t%s\t%s/app/%s/workspaces/%s\n",
 				*v.Name, *v.TerraformVersion, c.Client.Address(), c.organization, *v.Name)
 		}
-		w.Flush()
+		_ = w.Flush()
 		c.UI.Output(out.String())
 	}
 	return 0
