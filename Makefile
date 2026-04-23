@@ -4,17 +4,14 @@ BINARY_NAME=tfcloud
 
 deps:
 	go mod download
-	go get -u golang.org/x/lint/golint
 
 install: deps
 	go install
 
-lint: deps
-	gofmt -s -l .
-	golint ./...
-	go vet ./...
+lint:
+	golangci-lint run ./...
 
-test: lint deps
+test: deps
 	go test -v ./...
 
 build: deps

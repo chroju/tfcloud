@@ -29,7 +29,7 @@ func (c *RunListCommand) Run(args []string) int {
 	}
 
 	if formatOpt != "" {
-		c.Command.Format = Format(formatOpt)
+		c.Format = Format(formatOpt)
 	}
 
 	client, err := tfc.NewTfCloud("", "")
@@ -49,7 +49,7 @@ func (c *RunListCommand) Run(args []string) int {
 		return 1
 	}
 
-	switch c.Command.Format {
+	switch c.Format {
 	case FormatAlfred:
 		alfredItems := make([]AlfredFormatItem, len(runlist))
 		for i, v := range runlist {
@@ -79,12 +79,12 @@ func (c *RunListCommand) Run(args []string) int {
 	default:
 		out := new(bytes.Buffer)
 		w := tabwriter.NewWriter(out, 0, 4, 1, ' ', 0)
-		fmt.Fprintln(w, "WORKSPACE\tSTATUS\tNEEDS CONFIRM\tLINK")
+		_, _ = fmt.Fprintln(w, "WORKSPACE\tSTATUS\tNEEDS CONFIRM\tLINK")
 		for _, r := range runlist {
-			fmt.Fprintf(w, "%s\t%s\t%v\t%s/app/%s/workspaces/%s/runs/%s\n",
+			_, _ = fmt.Fprintf(w, "%s\t%s\t%v\t%s/app/%s/workspaces/%s/runs/%s\n",
 				*r.Workspace, *r.Status, *r.IsConfirmable, c.Client.Address(), c.organization, *r.Workspace, *r.ID)
 		}
-		w.Flush()
+		_ = w.Flush()
 		c.UI.Output(out.String())
 	}
 	return 0

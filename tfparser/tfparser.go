@@ -2,7 +2,6 @@ package tfparser
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 
@@ -77,7 +76,7 @@ func ParseRemoteBackend(root string) (*RemoteBackend, error) {
 	}
 
 	for _, path := range paths {
-		src, err := ioutil.ReadFile(path)
+		src, err := os.ReadFile(path)
 		if err != nil {
 			continue
 		}
@@ -107,7 +106,7 @@ func ParseRemoteBackend(root string) (*RemoteBackend, error) {
 						}
 
 						if cfg != nil && config != nil {
-							return nil, fmt.Errorf("Remote backend config is duplicated")
+							return nil, fmt.Errorf("remote backend config is duplicated")
 						}
 
 						config = cfg
@@ -118,7 +117,7 @@ func ParseRemoteBackend(root string) (*RemoteBackend, error) {
 	}
 
 	if config == nil {
-		return nil, fmt.Errorf("Remote backend config is not found")
+		return nil, fmt.Errorf("remote backend config is not found")
 	}
 
 	return config, nil

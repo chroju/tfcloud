@@ -50,7 +50,7 @@ func (c *WorkspaceViewCommand) Run(args []string) int {
 	}
 
 	if formatOpt != "" {
-		c.Command.Format = Format(formatOpt)
+		c.Format = Format(formatOpt)
 	}
 
 	client, err := tfc.NewTfCloud("", "")
@@ -80,8 +80,8 @@ func (c *WorkspaceViewCommand) Run(args []string) int {
 	url := fmt.Sprintf("%s/app/%s/workspaces/%s", c.Client.Address(), organization, workspace)
 
 	if c.web {
-		openbrowser(url)
-	} else if c.Command.Format == FormatJSON {
+		_ = openbrowser(url)
+	} else if c.Format == FormatJSON {
 		out, err := json.MarshalIndent(ws, "", "  ")
 		if err != nil {
 			c.UI.Error(err.Error())
@@ -91,17 +91,17 @@ func (c *WorkspaceViewCommand) Run(args []string) int {
 	} else {
 		out := new(bytes.Buffer)
 		w := tabwriter.NewWriter(out, 0, 4, 2, ' ', 0)
-		fmt.Fprintf(w, "%s\t%s\n", "Name:", *ws.Name)
-		fmt.Fprintf(w, "%s\t%s\n", "Terraform Version:", *ws.TerraformVersion)
-		fmt.Fprintf(w, "%s\t%s\n", "VCS Repo:", *ws.VCSRepoName)
-		fmt.Fprintf(w, "%s\t%s\n", "Working Directory:", *ws.WorkingDirectory)
-		fmt.Fprintf(w, "%s\t%s\n", "Execution mode:", *ws.ExecutionMode)
-		fmt.Fprintf(w, "%s\t%v\n", "Auto Apply:", *ws.AutoApply)
-		fmt.Fprintf(w, "%s\t%v\n", "Resource count:", *ws.ResourceCount)
-		fmt.Fprintf(w, "%s\t%s\n", "Created at:", ws.CreatedAt.Format(timeFormat))
-		fmt.Fprintf(w, "%s\t%s\n", "Updated at:", ws.UpdatedAt.Format(timeFormat))
-		fmt.Fprintf(w, "%s\t%s\n", "URL:", url)
-		w.Flush()
+		_, _ = fmt.Fprintf(w, "%s\t%s\n", "Name:", *ws.Name)
+		_, _ = fmt.Fprintf(w, "%s\t%s\n", "Terraform Version:", *ws.TerraformVersion)
+		_, _ = fmt.Fprintf(w, "%s\t%s\n", "VCS Repo:", *ws.VCSRepoName)
+		_, _ = fmt.Fprintf(w, "%s\t%s\n", "Working Directory:", *ws.WorkingDirectory)
+		_, _ = fmt.Fprintf(w, "%s\t%s\n", "Execution mode:", *ws.ExecutionMode)
+		_, _ = fmt.Fprintf(w, "%s\t%v\n", "Auto Apply:", *ws.AutoApply)
+		_, _ = fmt.Fprintf(w, "%s\t%v\n", "Resource count:", *ws.ResourceCount)
+		_, _ = fmt.Fprintf(w, "%s\t%s\n", "Created at:", ws.CreatedAt.Format(timeFormat))
+		_, _ = fmt.Fprintf(w, "%s\t%s\n", "Updated at:", ws.UpdatedAt.Format(timeFormat))
+		_, _ = fmt.Fprintf(w, "%s\t%s\n", "URL:", url)
+		_ = w.Flush()
 		c.UI.Output(out.String())
 	}
 
