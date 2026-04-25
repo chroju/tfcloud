@@ -8,7 +8,7 @@ require (
 	github.com/hashicorp/go-version v1.9.0
 	github.com/hashicorp/hcl/v2 v2.24.0
 	github.com/mitchellh/cli v1.1.5
-	github.com/spf13/pflag v1.0.5
+	github.com/spf13/pflag v1.0.10
 )
 
 require (
