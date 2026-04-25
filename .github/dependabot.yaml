@@ -12,6 +12,8 @@ updates:
     assignees:
       - "chroju"
     target-branch: "main"
+    cooldown:
+      default-days: 7
 
   - package-ecosystem: "github-actions"
     directory: "/"
@@ -20,3 +22,5 @@ updates:
     assignees:
       - "chroju"
     target-branch: "main"
+    cooldown:
+      default-days: 7
