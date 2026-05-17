@@ -4,7 +4,7 @@ go 1.25.0
 
 require (
 	github.com/google/go-github/v67 v67.0.0
-	github.com/hashicorp/go-tfe v1.103.0
+	github.com/hashicorp/go-tfe v1.105.0
 	github.com/hashicorp/go-version v1.9.0
 	github.com/hashicorp/hcl/v2 v2.24.0
 	github.com/mitchellh/cli v1.1.5
