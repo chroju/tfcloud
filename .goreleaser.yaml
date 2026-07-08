@@ -1,3 +1,4 @@
+version: 2
 before:
   hooks:
     - go mod tidy
@@ -20,13 +21,13 @@ archives:
     files:
       - none*
 changelog:
-  skip: true
+  disable: true
 brews:
   - name: tfcloud
-    tap:
+    skip_upload: true
+    repository:
       owner: chroju
       name: homebrew-tap
-      token:
     url_template: "https://github.com/chroju/tfcloud/releases/download/{{ .Tag }}/{{ .ArtifactName }}"
     description: "Terraform Cloud CLI tool"
     homepage: "https://github.com/chroju/tfcloud"
