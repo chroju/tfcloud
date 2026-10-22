@@ -1,6 +1,6 @@
 module github.com/chroju/tfcloud
 
-go 1.25.0
+go 1.26.10
 
 require (
 	github.com/google/go-github/v67 v67.0.0
