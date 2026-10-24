@@ -22,17 +22,3 @@ archives:
       - none*
 changelog:
   disable: true
-brews:
-  - name: tfcloud
-    skip_upload: true
-    repository:
-      owner: chroju
-      name: homebrew-tap
-    url_template: "https://github.com/chroju/tfcloud/releases/download/{{ .Tag }}/{{ .ArtifactName }}"
-    description: "Terraform Cloud CLI tool"
-    homepage: "https://github.com/chroju/tfcloud"
-    license: "MIT"
-    test: |
-      system "#{bin}/tfcloud --version"
-    install: |
-      bin.install "tfcloud"
