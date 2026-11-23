@@ -6,7 +6,30 @@ tfcloud
 [![GitHub go.mod Go version (branch)](https://img.shields.io/github/go-mod/go-version/chroju/tfcloud/main)](https://github.com/chroju/tfcloud/blob/main/go.mod)
 
 
+> [!WARNING]
+> **This project is no longer maintained and this repository has been archived.**
+> Please use [tfctl](https://github.com/hashicorp/tfctl-cli), the official CLI for HCP Terraform / Terraform Enterprise, instead. See [Migrating to tfctl](#migrating-to-tfctl) below.
+
 `tfcloud` is a [Terraform Cloud](https://www.terraform.io/docs/cloud/index.html) (and Terraform Enterprise) CLI tool.
+
+Migrating to tfctl
+------------------
+
+HashiCorp now provides [tfctl](https://github.com/hashicorp/tfctl-cli), an official CLI that can call the whole HCP Terraform / Terraform Enterprise API. It covers most of what `tfcloud` does, so `tfcloud` is retired in favor of it.
+
+The table below shows rough equivalents as of tfctl v0.4.0. Commands without a dedicated tfctl subcommand go through `tfctl api`, which calls any API endpoint. Run `tfctl <command> --help` for the exact usage.
+
+| tfcloud | tfctl |
+|---|---|
+| `tfcloud workspace list <organization>` | `tfctl get workspaces --all` |
+| `tfcloud workspace view` | `tfctl api /organizations/{organization}/workspaces/<workspace name>` |
+| `tfcloud run list <organization>` | No direct equivalent. `tfctl run status <workspace name>` shows the latest run of a single workspace. |
+| `tfcloud run apply <run ID>` | `tfctl api /runs/<run ID>/actions/apply --method POST` |
+| `tfcloud module list <organization>` | `tfctl api /organizations/{organization}/registry-modules` |
+| `tfcloud module versions <organization> <provider> <module name>` | `tfctl api /organizations/{organization}/registry-modules/private/{organization}/<module name>/<provider>` |
+| `tfcloud workspace upgrade` | No direct equivalent. Update the `terraform-version` attribute of the workspace with a `PATCH` request through `tfctl api`. |
+
+Like `tfcloud`, tfctl falls back to the tokens configured for Terraform (`terraform login`, `TF_TOKEN_<hostname>`) and resolves the organization and workspace from the Terraform configuration in the current directory.
 
 Notes
 -----
